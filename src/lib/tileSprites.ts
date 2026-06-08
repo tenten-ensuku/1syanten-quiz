@@ -45,15 +45,7 @@ export function getSpriteInfo(tileId: TileId, sideways: boolean): SpriteInfo | n
   }
 
   if (tileId === "hatsu") {
-    return {
-      file: "tiles-honor.png",
-      sheetWidth: NORMAL_CELL_WIDTH,
-      sheetHeight: NORMAL_CELL_HEIGHT,
-      cellWidth: NORMAL_CELL_WIDTH,
-      cellHeight: NORMAL_CELL_HEIGHT,
-      x: 0,
-      y: 0
-    };
+    return null;
   }
 
   const suit = tileId[1];
