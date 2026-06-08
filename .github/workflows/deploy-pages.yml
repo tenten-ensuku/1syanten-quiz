@@ -37,6 +37,11 @@ jobs:
         env:
           NEXT_PUBLIC_BASE_PATH: /1syanten-quiz
 
+      - name: Copy tile assets
+        run: |
+          mkdir -p out/tiles
+          cp -R public/tiles/. out/tiles/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
