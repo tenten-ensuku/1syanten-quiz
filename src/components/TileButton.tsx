@@ -37,8 +37,6 @@ export function TileButton({
       aria-label={`${label}を選択`}
     >
       <TileView tileId={tileId} compact />
-      <span className="choiceLabel">{label}</span>
-      {isSelected && <span className="selectedMarker">選択済み</span>}
     </button>
   );
 }
