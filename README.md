@@ -21,12 +21,15 @@ npm run dev
 - `public/tiles/2m.png`
 - `public/tiles/1p.png`
 - `public/tiles/1s.png`
+- `public/tiles/ton.png`
+- `public/tiles/haku.png`
 - `public/tiles/hatsu.png`
 
 ## 問題データ
 
 問題データと牌ID一覧は `src/lib/quizData.ts` にあります。
 `answers` は複数の正解牌を持てる配列です。
+解答候補は萬子9種、筒子9種、索子9種、字牌7種の合計34種類です。
 
 ## 開発用コマンド
 
