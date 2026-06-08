@@ -41,3 +41,11 @@ npm run dev
 npm run typecheck
 npm run build
 ```
+
+## GitHub Pages
+
+`main` ブランチへpushすると、GitHub Actionsが `npm run build` で静的サイトを作成し、GitHub Pagesへデプロイします。
+
+公開URL:
+
+https://watarum2001.github.io/1syanten-quiz/
