@@ -18,7 +18,7 @@ export function TileButton({
   isDisabled,
   onSelect
 }: TileButtonProps) {
-  const label = getTileLabel(tileId);
+  const label = tileId === "hatsu" ? "發" : getTileLabel(tileId);
   const className = [
     "tileChoice",
     isSelected ? "selected" : "",
@@ -34,10 +34,11 @@ export function TileButton({
       onClick={() => onSelect(tileId)}
       disabled={isDisabled}
       aria-pressed={isSelected}
-      aria-label={`${label}を選ぶ`}
+      aria-label={`${label}を選択`}
     >
       <TileView tileId={tileId} compact />
       <span className="choiceLabel">{label}</span>
+      {isSelected && <span className="selectedMarker">選択済み</span>}
     </button>
   );
 }
