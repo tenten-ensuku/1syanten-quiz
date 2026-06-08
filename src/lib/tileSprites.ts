@@ -1,4 +1,4 @@
-import { TileId } from "./quizData";
+import { HONOR_TILE_IDS, TileId } from "./quizData";
 
 export type SpriteInfo = {
   file:
@@ -44,7 +44,7 @@ export function getSpriteInfo(tileId: TileId, sideways: boolean): SpriteInfo | n
     };
   }
 
-  if (tileId === "hatsu") {
+  if (HONOR_TILE_IDS.includes(tileId as (typeof HONOR_TILE_IDS)[number])) {
     return null;
   }
 
