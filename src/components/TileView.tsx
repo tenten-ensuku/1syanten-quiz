@@ -1,6 +1,6 @@
 "use client";
 
-import { TileId, getTileLabel } from "@/lib/quizData";
+import { HONOR_TILE_IDS, TileId, getTileLabel } from "@/lib/quizData";
 import { getSpriteInfo } from "@/lib/tileSprites";
 
 type TileViewProps = {
@@ -44,13 +44,13 @@ export function TileView({ tileId, compact = false, sideways = false }: TileView
             backgroundSize: `${(sprite.sheetWidth / sprite.cellWidth) * 100}% ${(sprite.sheetHeight / sprite.cellHeight) * 100}%`
           }}
         />
-      ) : tileId === "hatsu" ? (
+      ) : HONOR_TILE_IDS.includes(tileId as (typeof HONOR_TILE_IDS)[number]) ? (
         <span
           className="tileSprite"
           role="img"
           aria-label={label}
           style={{
-            backgroundImage: `url("${tileAssetBase}/hatsu.png")`,
+            backgroundImage: `url("${tileAssetBase}/${tileId}.png")`,
             backgroundPosition: "center",
             backgroundSize: "100% 100%"
           }}
