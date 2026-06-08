@@ -9,11 +9,12 @@ type TileViewProps = {
   sideways?: boolean;
 };
 
+const tileAssetBase =
+  "https://raw.githubusercontent.com/wataruM2001/1syanten-quiz/main/public/tiles";
+
 export function TileView({ tileId, compact = false, sideways = false }: TileViewProps) {
   const label = tileId === "hatsu" ? "發" : getTileLabel(tileId);
   const sprite = getSpriteInfo(tileId, sideways);
-  const tileAssetBase =
-    "https://raw.githubusercontent.com/wataruM2001/1syanten-quiz/main/public/tiles";
   const spriteX =
     sprite && sprite.sheetWidth !== sprite.cellWidth
       ? (sprite.x / (sprite.sheetWidth - sprite.cellWidth)) * 100
@@ -43,10 +44,19 @@ export function TileView({ tileId, compact = false, sideways = false }: TileView
             backgroundSize: `${(sprite.sheetWidth / sprite.cellWidth) * 100}% ${(sprite.sheetHeight / sprite.cellHeight) * 100}%`
           }}
         />
+      ) : tileId === "hatsu" ? (
+        <span
+          className="tileSprite"
+          role="img"
+          aria-label={label}
+          style={{
+            backgroundImage: `url("${tileAssetBase}/hatsu.png")`,
+            backgroundPosition: "center",
+            backgroundSize: "100% 100%"
+          }}
+        />
       ) : (
-        <span className={tileId === "hatsu" ? "tileFallback tileFallbackHonor" : "tileFallback"}>
-          {label}
-        </span>
+        <span className="tileFallback" aria-hidden="true" />
       )}
     </span>
   );
