@@ -13,6 +13,7 @@ export function TileView({ tileId, compact = false, sideways = false }: TileView
   const [hasImageError, setHasImageError] = useState(false);
   const label = getTileLabel(tileId);
   const imageName = sideways ? `${tileId}-yoko` : tileId;
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const className = [
     "tile",
     compact ? "tileCompact" : "",
@@ -25,7 +26,7 @@ export function TileView({ tileId, compact = false, sideways = false }: TileView
     <span className={className} aria-label={label}>
       {!hasImageError ? (
         <img
-          src={`/tiles/${imageName}.png`}
+          src={`${basePath}/tiles/${imageName}.png`}
           alt={label}
           onError={() => setHasImageError(true)}
           draggable={false}
