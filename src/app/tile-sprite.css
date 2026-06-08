@@ -15,14 +15,3 @@
   background-clip: content-box;
   image-rendering: auto;
 }
-
-.tileFallbackHonor {
-  color: #047343;
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
-  font-size: 2rem;
-  font-weight: 900;
-}
-
-.tileCompact .tileFallbackHonor {
-  font-size: 1.5rem;
-}
