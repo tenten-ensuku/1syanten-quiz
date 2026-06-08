@@ -16,12 +16,12 @@ export type SpriteInfo = {
 };
 
 const NORMAL_COLUMNS = 9;
-const NORMAL_CELL_WIDTH = 8;
-const NORMAL_CELL_HEIGHT = 12;
+const NORMAL_CELL_WIDTH = 52;
+const NORMAL_CELL_HEIGHT = 70;
 
 const YOKO_COLUMNS = 2;
-const YOKO_CELL_WIDTH = 12;
-const YOKO_CELL_HEIGHT = 8;
+const YOKO_CELL_WIDTH = 70;
+const YOKO_CELL_HEIGHT = 52;
 
 const yokoTiles: TileId[] = ["8m", "hatsu"];
 
