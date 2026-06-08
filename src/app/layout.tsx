@@ -4,8 +4,8 @@ import "./globals.css";
 import "./tile-sprite.css";
 
 export const metadata: Metadata = {
-  title: "イーシャンテンクイズ",
-  description: "13枚の手牌からテンパイに進む受け入れ牌を選ぶ麻雀クイズ"
+  title: "一向聴の受け入れテスト",
+  description: "13枚の牌姿からテンパイに進む受け入れ牌をすべて選ぶ麻雀テスト"
 };
 
 export default function RootLayout({
