@@ -52,13 +52,6 @@ button {
   margin-bottom: 24px;
 }
 
-.kicker {
-  margin: 0 0 8px;
-  color: var(--accent-strong);
-  font-size: 0.88rem;
-  font-weight: 700;
-}
-
 h1,
 h2,
 p {
@@ -171,11 +164,22 @@ h2 {
   height: 42px;
 }
 
-.tile img {
+.tile img,
+.tileSprite {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.tile img {
   object-fit: contain;
+}
+
+.tileSprite {
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  background-clip: content-box;
+  image-rendering: auto;
 }
 
 .tileFallback {
@@ -189,22 +193,29 @@ h2 {
   font-weight: 800;
   line-height: 1;
   text-align: center;
-  background: linear-gradient(180deg, #ffffff 0%, #f2f5f1 100%);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f2f5f1 100%);
 }
 
-.choiceGrid {
+.choiceRows {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   gap: 10px;
+}
+
+.choiceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .tileChoice {
   display: flex;
-  min-height: 96px;
-  flex-direction: column;
+  width: 58px;
+  height: 74px;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  padding: 7px;
   border: 2px solid transparent;
   border-radius: 8px;
   color: var(--text);
@@ -234,6 +245,9 @@ h2 {
 .tileChoice.selected {
   border-color: var(--accent);
   background: #e9f7f5;
+  box-shadow:
+    0 0 0 3px rgba(20, 124, 114, 0.18),
+    0 8px 20px rgba(31, 41, 51, 0.08);
 }
 
 .tileChoice.answer {
@@ -241,40 +255,45 @@ h2 {
   background: var(--correct-bg);
 }
 
-.selectedMarker {
-  min-height: 1.2em;
-  padding: 2px 7px;
-  border-radius: 999px;
-  color: #ffffff;
-  background: var(--accent);
-  font-size: 0.72rem;
-  font-weight: 800;
+.choiceActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
 }
 
-.choiceLabel {
-  min-height: 1.2em;
-  color: var(--muted);
-  font-size: 0.86rem;
-  font-weight: 700;
+.submitButton,
+.clearButton {
+  min-height: 46px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .submitButton {
-  min-height: 46px;
-  margin-top: 16px;
-  padding: 10px 18px;
   border: 0;
-  border-radius: 8px;
   color: #ffffff;
   background: var(--accent);
-  font-weight: 800;
-  cursor: pointer;
+}
+
+.clearButton {
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: var(--surface-strong);
 }
 
 .submitButton:hover:not(:disabled) {
   background: var(--accent-strong);
 }
 
-.submitButton:disabled {
+.clearButton:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.submitButton:disabled,
+.clearButton:disabled {
   cursor: default;
   opacity: 0.6;
 }
@@ -383,12 +402,17 @@ h2 {
     height: 38px;
   }
 
-  .choiceGrid {
-    grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+  .choiceRows {
     gap: 8px;
   }
 
+  .choiceRow {
+    gap: 6px;
+  }
+
   .tileChoice {
-    min-height: 88px;
+    width: 50px;
+    height: 66px;
+    padding: 6px;
   }
 }
