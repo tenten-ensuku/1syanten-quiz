@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { TileId, getTileLabel } from "@/lib/quizData";
+import { getSpriteInfo } from "@/lib/tileSprites";
 
 type TileViewProps = {
   tileId: TileId;
@@ -10,10 +10,17 @@ type TileViewProps = {
 };
 
 export function TileView({ tileId, compact = false, sideways = false }: TileViewProps) {
-  const [hasImageError, setHasImageError] = useState(false);
   const label = getTileLabel(tileId);
-  const imageName = sideways ? `${tileId}-yoko` : tileId;
+  const sprite = getSpriteInfo(tileId, sideways);
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const spriteX =
+    sprite && sprite.sheetWidth !== sprite.cellWidth
+      ? (sprite.x / (sprite.sheetWidth - sprite.cellWidth)) * 100
+      : 0;
+  const spriteY =
+    sprite && sprite.sheetHeight !== sprite.cellHeight
+      ? (sprite.y / (sprite.sheetHeight - sprite.cellHeight)) * 100
+      : 0;
   const className = [
     "tile",
     compact ? "tileCompact" : "",
@@ -24,12 +31,16 @@ export function TileView({ tileId, compact = false, sideways = false }: TileView
 
   return (
     <span className={className} aria-label={label}>
-      {!hasImageError ? (
-        <img
-          src={`${basePath}/tiles/${imageName}.png`}
-          alt={label}
-          onError={() => setHasImageError(true)}
-          draggable={false}
+      {sprite ? (
+        <span
+          className="tileSprite"
+          role="img"
+          aria-label={label}
+          style={{
+            backgroundImage: `url("${basePath}/tiles/${sprite.file}")`,
+            backgroundPosition: `${spriteX}% ${spriteY}%`,
+            backgroundSize: `${(sprite.sheetWidth / sprite.cellWidth) * 100}% ${(sprite.sheetHeight / sprite.cellHeight) * 100}%`
+          }}
         />
       ) : (
         <span className="tileFallback">{label}</span>
