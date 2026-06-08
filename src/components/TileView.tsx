@@ -50,7 +50,7 @@ export function TileView({ tileId, compact = false, sideways = false }: TileView
           role="img"
           aria-label={label}
           style={{
-            backgroundImage: `url("${tileAssetBase}/${tileId}.png")`,
+            backgroundImage: `url("${tileAssetBase}/${tileId}.svg")`,
             backgroundPosition: "center",
             backgroundSize: "100% 100%"
           }}
