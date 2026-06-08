@@ -26,10 +26,18 @@ export const ALL_TILE_IDS = [
   "7s",
   "8s",
   "9s",
-  "hatsu"
+  "ton",
+  "nan",
+  "sha",
+  "pei",
+  "haku",
+  "hatsu",
+  "chun"
 ] as const;
 
 export type TileId = (typeof ALL_TILE_IDS)[number];
+
+export const HONOR_TILE_IDS = ["ton", "nan", "sha", "pei", "haku", "hatsu", "chun"] as const;
 
 export type QuizQuestion = {
   id: number;
@@ -68,7 +76,13 @@ export const TILE_LABELS: Record<TileId, string> = {
   "7s": "7索",
   "8s": "8索",
   "9s": "9索",
-  hatsu: "發"
+  ton: "東",
+  nan: "南",
+  sha: "西",
+  pei: "北",
+  haku: "白",
+  hatsu: "發",
+  chun: "中"
 };
 
 export function getTileLabel(tileId: TileId) {
@@ -110,9 +124,10 @@ function parseTileBlock(block: string): TileId[] {
       continue;
     }
 
-    if (block.startsWith("hatsu", index)) {
-      tiles.push("hatsu");
-      index += "hatsu".length;
+    const honor = HONOR_TILE_IDS.find((tileId) => block.startsWith(tileId, index));
+    if (honor) {
+      tiles.push(honor);
+      index += honor.length;
       continue;
     }
 
