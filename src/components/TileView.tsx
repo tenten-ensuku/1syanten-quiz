@@ -10,7 +10,7 @@ type TileViewProps = {
 };
 
 export function TileView({ tileId, compact = false, sideways = false }: TileViewProps) {
-  const label = getTileLabel(tileId);
+  const label = tileId === "hatsu" ? "發" : getTileLabel(tileId);
   const sprite = getSpriteInfo(tileId, sideways);
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const spriteX =
@@ -43,7 +43,9 @@ export function TileView({ tileId, compact = false, sideways = false }: TileView
           }}
         />
       ) : (
-        <span className="tileFallback">{label}</span>
+        <span className={tileId === "hatsu" ? "tileFallback tileFallbackHonor" : "tileFallback"}>
+          {label}
+        </span>
       )}
     </span>
   );
