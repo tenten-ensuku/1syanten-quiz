@@ -42,12 +42,12 @@ const TILE_ORDER: TileId[] = [
 ];
 
 const NORMAL_COLUMNS = 7;
-const NORMAL_CELL_WIDTH = 16;
-const NORMAL_CELL_HEIGHT = 23;
+const NORMAL_CELL_WIDTH = 8;
+const NORMAL_CELL_HEIGHT = 12;
 
 const YOKO_COLUMNS = 2;
-const YOKO_CELL_WIDTH = 23;
-const YOKO_CELL_HEIGHT = 16;
+const YOKO_CELL_WIDTH = 12;
+const YOKO_CELL_HEIGHT = 8;
 
 const yokoTiles: TileId[] = ["8m", "hatsu"];
 
