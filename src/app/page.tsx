@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ALL_TILE_IDS, QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
+import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
 import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
@@ -15,7 +15,12 @@ function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   return answers.every((tileId) => selectedSet.has(tileId));
 }
 
-const ANSWER_CANDIDATES = Array.from(new Set(ALL_TILE_IDS));
+const TILE_GROUPS: { label: string; tiles: TileId[] }[] = [
+  { label: "萬子", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
+  { label: "筒子", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
+  { label: "索子", tiles: ["1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s"] },
+  { label: "發", tiles: ["hatsu"] }
+];
 
 export default function Home() {
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -41,6 +46,12 @@ export default function Home() {
     setHasSubmitted(true);
   };
 
+  const handleClear = () => {
+    if (!hasSubmitted) {
+      setSelectedTiles([]);
+    }
+  };
+
   const handleNext = () => {
     setQuestionIndex((current) => (current + 1) % QUIZ_QUESTIONS.length);
     setSelectedTiles([]);
@@ -50,8 +61,7 @@ export default function Home() {
   return (
     <main className="appShell">
       <section className="quizHeader" aria-labelledby="app-title">
-        <p className="kicker">複数回答式クイズ</p>
-        <h1 id="app-title">イーシャンテンクイズ</h1>
+        <h1 id="app-title">一向聴の受け入れテスト</h1>
         <p className="lead">
           13枚の牌姿を見て、この牌を引くとテンパイに進むと思う牌をすべて選んでください。
         </p>
@@ -82,32 +92,42 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="panel choicesPanel" aria-labelledby="choices-title">
-        <div className="sectionTitleRow">
-          <h2 id="choices-title">解答候補</h2>
-          <span className="questionCount">選択中 {selectedTiles.length}枚</span>
-        </div>
-        <div className="choiceGrid">
-          {ANSWER_CANDIDATES.map((tileId) => (
-            <TileButton
-              key={tileId}
-              tileId={tileId}
-              isSelected={selectedTiles.includes(tileId)}
-              isAnswer={hasSubmitted && question.answers.includes(tileId)}
-              isDisabled={hasSubmitted}
-              onSelect={handleSelect}
-            />
+      <section className="panel choicesPanel" aria-label="回答する牌を選択">
+        <div className="choiceRows">
+          {TILE_GROUPS.map((group) => (
+            <div className="choiceRow" key={group.label} aria-label={group.label}>
+              {group.tiles.map((tileId) => (
+                <TileButton
+                  key={tileId}
+                  tileId={tileId}
+                  isSelected={selectedTiles.includes(tileId)}
+                  isAnswer={hasSubmitted && question.answers.includes(tileId)}
+                  isDisabled={hasSubmitted}
+                  onSelect={handleSelect}
+                />
+              ))}
+            </div>
           ))}
         </div>
 
-        <button
-          className="submitButton"
-          type="button"
-          onClick={handleSubmit}
-          disabled={hasSubmitted}
-        >
-          解答する
-        </button>
+        <div className="choiceActions">
+          <button
+            className="submitButton"
+            type="button"
+            onClick={handleSubmit}
+            disabled={hasSubmitted}
+          >
+            解答する
+          </button>
+          <button
+            className="clearButton"
+            type="button"
+            onClick={handleClear}
+            disabled={hasSubmitted || selectedTiles.length === 0}
+          >
+            クリア
+          </button>
+        </div>
       </section>
 
       {hasSubmitted && (
