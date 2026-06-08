@@ -12,7 +12,8 @@ type TileViewProps = {
 export function TileView({ tileId, compact = false, sideways = false }: TileViewProps) {
   const label = tileId === "hatsu" ? "發" : getTileLabel(tileId);
   const sprite = getSpriteInfo(tileId, sideways);
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const tileAssetBase =
+    "https://raw.githubusercontent.com/wataruM2001/1syanten-quiz/main/public/tiles";
   const spriteX =
     sprite && sprite.sheetWidth !== sprite.cellWidth
       ? (sprite.x / (sprite.sheetWidth - sprite.cellWidth)) * 100
@@ -37,7 +38,7 @@ export function TileView({ tileId, compact = false, sideways = false }: TileView
           role="img"
           aria-label={label}
           style={{
-            backgroundImage: `url("${basePath}/tiles/${sprite.file}")`,
+            backgroundImage: `url("${tileAssetBase}/${sprite.file}")`,
             backgroundPosition: `${spriteX}% ${spriteY}%`,
             backgroundSize: `${(sprite.sheetWidth / sprite.cellWidth) * 100}% ${(sprite.sheetHeight / sprite.cellHeight) * 100}%`
           }}
