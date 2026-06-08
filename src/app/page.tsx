@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
 import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
@@ -15,6 +15,17 @@ function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   return answers.every((tileId) => selectedSet.has(tileId));
 }
 
+function createShuffledQuestionIndexes() {
+  const indexes = QUIZ_QUESTIONS.map((_, index) => index);
+
+  for (let index = indexes.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [indexes[index], indexes[randomIndex]] = [indexes[randomIndex], indexes[index]];
+  }
+
+  return indexes;
+}
+
 const TILE_GROUPS: { label: string; tiles: TileId[] }[] = [
   { label: "萬子", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
   { label: "筒子", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
@@ -24,10 +35,18 @@ const TILE_GROUPS: { label: string; tiles: TileId[] }[] = [
 
 export default function Home() {
   const [questionIndex, setQuestionIndex] = useState(0);
+  const [questionOrder, setQuestionOrder] = useState<number[]>(() =>
+    QUIZ_QUESTIONS.map((_, index) => index)
+  );
   const [selectedTiles, setSelectedTiles] = useState<TileId[]>([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  const question = QUIZ_QUESTIONS[questionIndex];
+  useEffect(() => {
+    setQuestionOrder(createShuffledQuestionIndexes());
+    setQuestionIndex(0);
+  }, []);
+
+  const question = QUIZ_QUESTIONS[questionOrder[questionIndex] ?? 0];
   const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
 
   const handleSelect = (tileId: TileId) => {
@@ -53,7 +72,15 @@ export default function Home() {
   };
 
   const handleNext = () => {
-    setQuestionIndex((current) => (current + 1) % QUIZ_QUESTIONS.length);
+    const nextIndex = questionIndex + 1;
+
+    if (nextIndex >= QUIZ_QUESTIONS.length) {
+      setQuestionOrder(createShuffledQuestionIndexes());
+      setQuestionIndex(0);
+    } else {
+      setQuestionIndex(nextIndex);
+    }
+
     setSelectedTiles([]);
     setHasSubmitted(false);
   };
