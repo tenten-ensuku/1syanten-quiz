@@ -19,7 +19,7 @@ const TILE_GROUPS: { label: string; tiles: TileId[] }[] = [
   { label: "萬子", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
   { label: "筒子", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
   { label: "索子", tiles: ["1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s"] },
-  { label: "發", tiles: ["hatsu"] }
+  { label: "字牌", tiles: ["ton", "nan", "sha", "pei", "haku", "hatsu", "chun"] }
 ];
 
 export default function Home() {
