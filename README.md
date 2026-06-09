@@ -39,4 +39,8 @@ npm run build
 
 公開 URL:
 
-https://watarum2001.github.io/1syanten-quiz/
+https://tenten-ensuku.github.io/1syanten-quiz/
+
+## 引き継ぎ
+
+このアプリは、しょうたむさんが作成した `wataruM2001/1syanten-quiz` をベースに引き継いだものです。
