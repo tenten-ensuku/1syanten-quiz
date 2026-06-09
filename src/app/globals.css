@@ -150,8 +150,6 @@ h2 {
 }
 
 .meldArea {
-  max-width: 100%;
-  flex-wrap: nowrap;
   margin-left: auto;
   padding-left: 14px;
   border-left: 1px solid var(--line);
@@ -159,29 +157,11 @@ h2 {
 
 .meld {
   display: inline-flex;
-  max-width: 100%;
-  flex: 0 1 auto;
-  flex-wrap: nowrap;
   align-items: center;
   gap: 0;
   padding: 6px;
   border-radius: 8px;
   background: rgba(20, 124, 114, 0.08);
-  --meld-tile-width: min(58px, calc((100% - 12px) / var(--meld-layout-units, 4)));
-}
-
-.meld .tile {
-  width: var(--meld-tile-width);
-}
-
-.meld .tileSideways {
-  width: calc(var(--meld-tile-width) * 1.363636);
-  height: var(--meld-tile-width);
-}
-
-.meld .tileSideways img {
-  width: var(--meld-tile-width);
-  height: calc(var(--meld-tile-width) * 1.363636);
 }
 
 .tile {
@@ -445,8 +425,6 @@ h2 {
 
   .meldArea {
     width: 100%;
-    max-width: 100%;
-    flex-wrap: nowrap;
     margin-left: 0;
     padding-top: 10px;
     padding-left: 0;
