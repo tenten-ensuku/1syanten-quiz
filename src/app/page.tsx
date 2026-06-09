@@ -139,7 +139,12 @@ export default function Home() {
       <section className="panel choicesPanel" aria-label="\u56de\u7b54\u3059\u308b\u724c\u3092\u9078\u629e">
         <div className="choiceRows">
           {TILE_GROUPS.map((group) => (
-            <div className="choiceRow" key={group.label} aria-label={group.label}>
+            <div
+              className="choiceRow"
+              key={group.label}
+              aria-label={group.label}
+              style={{ "--choice-tile-count": group.tiles.length } as CSSProperties}
+            >
               {group.tiles.map((tileId) => (
                 <TileButton
                   key={tileId}

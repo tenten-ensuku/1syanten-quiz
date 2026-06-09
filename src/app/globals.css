@@ -233,18 +233,20 @@ h2 {
 
 .choiceRow {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  width: 100%;
+  flex-wrap: nowrap;
+  gap: 0;
   align-items: center;
 }
 
 .tileChoice {
   display: flex;
-  width: 58px;
-  height: 74px;
+  width: min(58px, calc(100% / var(--choice-tile-count, 9)));
+  aspect-ratio: 58 / 74;
+  height: auto;
   align-items: center;
   justify-content: center;
-  padding: 7px;
+  padding: clamp(2px, 0.7vw, 7px);
   border: 2px solid transparent;
   border-radius: 8px;
   color: var(--text);
@@ -255,6 +257,10 @@ h2 {
     transform 0.15s ease,
     border-color 0.15s ease,
     background 0.15s ease;
+}
+
+.tileChoice .tileCompact {
+  width: min(42px, calc(100% - 8px));
 }
 
 .tileChoice:hover:not(:disabled) {
@@ -454,12 +460,16 @@ h2 {
   }
 
   .choiceRow {
-    gap: 6px;
+    gap: 0;
   }
 
   .tileChoice {
-    width: 50px;
-    height: 66px;
-    padding: 6px;
+    width: min(50px, calc(100% / var(--choice-tile-count, 9)));
+    height: auto;
+    padding: clamp(2px, 0.8vw, 6px);
+  }
+
+  .tileChoice .tileCompact {
+    width: min(38px, calc(100% - 6px));
   }
 }
