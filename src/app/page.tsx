@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
-import { GENERATED_EXPLANATIONS } from "@/lib/generatedExplanations";
 import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
+import { createRandomVariant, transformQuestion } from "@/lib/quizTransforms";
 
 function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   if (selectedTiles.length !== answers.length) {
@@ -39,19 +39,19 @@ export default function Home() {
   const [questionOrder, setQuestionOrder] = useState<number[]>(() =>
     QUIZ_QUESTIONS.map((_, index) => index)
   );
+  const [question, setQuestion] = useState(() =>
+    transformQuestion(QUIZ_QUESTIONS[0], { m: "m", p: "p", s: "s" }, false)
+  );
   const [selectedTiles, setSelectedTiles] = useState<TileId[]>([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
-    setQuestionOrder(createShuffledQuestionIndexes());
+    const nextOrder = createShuffledQuestionIndexes();
+    setQuestionOrder(nextOrder);
     setQuestionIndex(0);
+    setQuestion(createRandomVariant(QUIZ_QUESTIONS[nextOrder[0] ?? 0]));
   }, []);
 
-  const baseQuestion = QUIZ_QUESTIONS[questionOrder[questionIndex] ?? 0];
-  const question = {
-    ...baseQuestion,
-    explanation: GENERATED_EXPLANATIONS[baseQuestion.source] ?? baseQuestion.explanation
-  };
   const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
 
   const handleSelect = (tileId: TileId) => {
@@ -80,10 +80,13 @@ export default function Home() {
     const nextIndex = questionIndex + 1;
 
     if (nextIndex >= QUIZ_QUESTIONS.length) {
-      setQuestionOrder(createShuffledQuestionIndexes());
+      const nextOrder = createShuffledQuestionIndexes();
+      setQuestionOrder(nextOrder);
       setQuestionIndex(0);
+      setQuestion(createRandomVariant(QUIZ_QUESTIONS[nextOrder[0] ?? 0]));
     } else {
       setQuestionIndex(nextIndex);
+      setQuestion(createRandomVariant(QUIZ_QUESTIONS[questionOrder[nextIndex] ?? 0]));
     }
 
     setSelectedTiles([]);
