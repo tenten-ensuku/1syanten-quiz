@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useEffect, useState } from "react";
+import { type CSSProperties, type PointerEvent, useEffect, useRef, useState } from "react";
 import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
@@ -45,6 +45,8 @@ export default function Home() {
   );
   const [selectedTiles, setSelectedTiles] = useState<TileId[]>([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const isPointerSelectingRef = useRef(false);
+  const pointerSelectedTilesRef = useRef(new Set<TileId>());
 
   useEffect(() => {
     const nextOrder = createShuffledQuestionIndexes();
@@ -66,6 +68,50 @@ export default function Home() {
         ? current.filter((selectedTile) => selectedTile !== tileId)
         : [...current, tileId]
     );
+  };
+
+  const pushTileDuringPointerSelect = (tileId: TileId) => {
+    if (hasSubmitted || pointerSelectedTilesRef.current.has(tileId)) {
+      return;
+    }
+
+    pointerSelectedTilesRef.current.add(tileId);
+    handleSelect(tileId);
+  };
+
+  const handlePointerSelectStart = (
+    tileId: TileId,
+    event: PointerEvent<HTMLButtonElement>
+  ) => {
+    if (hasSubmitted || event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    isPointerSelectingRef.current = true;
+    pointerSelectedTilesRef.current = new Set<TileId>();
+    pushTileDuringPointerSelect(tileId);
+  };
+
+  const handlePointerSelectMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!isPointerSelectingRef.current || hasSubmitted) {
+      return;
+    }
+
+    const target = document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest<HTMLButtonElement>("[data-tile-id]");
+    const tileId = target?.dataset.tileId as TileId | undefined;
+
+    if (tileId) {
+      event.preventDefault();
+      pushTileDuringPointerSelect(tileId);
+    }
+  };
+
+  const handlePointerSelectEnd = () => {
+    isPointerSelectingRef.current = false;
+    pointerSelectedTilesRef.current = new Set<TileId>();
   };
 
   const handleSubmit = () => {
@@ -137,7 +183,13 @@ export default function Home() {
       </section>
 
       <section className="panel choicesPanel" aria-label="\u56de\u7b54\u3059\u308b\u724c\u3092\u9078\u629e">
-        <div className="choiceRows">
+        <div
+          className="choiceRows"
+          onPointerMove={handlePointerSelectMove}
+          onPointerUp={handlePointerSelectEnd}
+          onPointerCancel={handlePointerSelectEnd}
+          onPointerLeave={handlePointerSelectEnd}
+        >
           {TILE_GROUPS.map((group) => (
             <div
               className="choiceRow"
@@ -153,6 +205,7 @@ export default function Home() {
                   isAnswer={hasSubmitted && question.answers.includes(tileId)}
                   isDisabled={hasSubmitted}
                   onSelect={handleSelect}
+                  onPointerSelectStart={handlePointerSelectStart}
                 />
               ))}
             </div>

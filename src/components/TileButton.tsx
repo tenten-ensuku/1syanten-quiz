@@ -1,5 +1,6 @@
 "use client";
 
+import type { PointerEvent } from "react";
 import { TileId, getTileLabel } from "@/lib/quizData";
 import { TileView } from "./TileView";
 
@@ -9,6 +10,7 @@ type TileButtonProps = {
   isAnswer: boolean;
   isDisabled: boolean;
   onSelect: (tileId: TileId) => void;
+  onPointerSelectStart: (tileId: TileId, event: PointerEvent<HTMLButtonElement>) => void;
 };
 
 export function TileButton({
@@ -16,7 +18,8 @@ export function TileButton({
   isSelected,
   isAnswer,
   isDisabled,
-  onSelect
+  onSelect,
+  onPointerSelectStart
 }: TileButtonProps) {
   const label = tileId === "hatsu" ? "發" : getTileLabel(tileId);
   const className = [
@@ -31,7 +34,13 @@ export function TileButton({
     <button
       className={className}
       type="button"
-      onClick={() => onSelect(tileId)}
+      data-tile-id={tileId}
+      onClick={(event) => {
+        if (event.detail === 0) {
+          onSelect(tileId);
+        }
+      }}
+      onPointerDown={(event) => onPointerSelectStart(tileId, event)}
       disabled={isDisabled}
       aria-pressed={isSelected}
       aria-label={`${label}を選択`}
