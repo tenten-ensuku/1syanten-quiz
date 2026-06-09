@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
 import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
+import { GENERATED_EXPLANATIONS } from "@/lib/generatedExplanations";
+import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
 
 function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   if (selectedTiles.length !== answers.length) {
@@ -27,10 +28,10 @@ function createShuffledQuestionIndexes() {
 }
 
 const TILE_GROUPS: { label: string; tiles: TileId[] }[] = [
-  { label: "萬子", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
-  { label: "筒子", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
-  { label: "索子", tiles: ["1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s"] },
-  { label: "字牌", tiles: ["ton", "nan", "sha", "pei", "haku", "hatsu", "chun"] }
+  { label: "\u842c\u5b50", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
+  { label: "\u7b52\u5b50", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
+  { label: "\u7d22\u5b50", tiles: ["1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s"] },
+  { label: "\u5b57\u724c", tiles: ["ton", "nan", "sha", "pei", "haku", "hatsu", "chun"] }
 ];
 
 export default function Home() {
@@ -46,7 +47,11 @@ export default function Home() {
     setQuestionIndex(0);
   }, []);
 
-  const question = QUIZ_QUESTIONS[questionOrder[questionIndex] ?? 0];
+  const baseQuestion = QUIZ_QUESTIONS[questionOrder[questionIndex] ?? 0];
+  const question = {
+    ...baseQuestion,
+    explanation: GENERATED_EXPLANATIONS[baseQuestion.source] ?? baseQuestion.explanation
+  };
   const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
 
   const handleSelect = (tileId: TileId) => {
@@ -88,29 +93,29 @@ export default function Home() {
   return (
     <main className="appShell">
       <section className="quizHeader" aria-labelledby="app-title">
-        <h1 id="app-title">一向聴の受け入れテスト</h1>
+        <h1 id="app-title">{"\u4e00\u5411\u8074\u306e\u53d7\u3051\u5165\u308c\u30c6\u30b9\u30c8"}</h1>
         <p className="lead">
-          13枚の牌姿を見て、この牌を引くとテンパイに進むと思う牌をすべて選んでください。
+          {"13\u679a\u306e\u724c\u59ff\u3092\u898b\u3066\u3001\u3053\u306e\u724c\u3092\u5f15\u304f\u3068\u30c6\u30f3\u30d1\u30a4\u306b\u9032\u3080\u3068\u601d\u3046\u724c\u3092\u3059\u3079\u3066\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002"}
         </p>
       </section>
 
       <section className="panel questionPanel" aria-labelledby="question-title">
         <div className="sectionTitleRow">
-          <h2 id="question-title">問題 {questionIndex + 1}</h2>
+          <h2 id="question-title">{"\u554f\u984c"} {questionIndex + 1}</h2>
           <span className="questionCount">
             {questionIndex + 1} / {QUIZ_QUESTIONS.length}
           </span>
         </div>
 
-        <div className="handArea" aria-label="問題の牌姿">
-          <div className="closedTiles" aria-label="手牌">
+        <div className="handArea" aria-label="\u554f\u984c\u306e\u724c\u59ff">
+          <div className="closedTiles" aria-label="\u624b\u724c">
             {question.hand.map((tileId, index) => (
               <TileView key={`${question.id}-${tileId}-${index}`} tileId={tileId} />
             ))}
           </div>
 
           {question.melds.length > 0 && (
-            <div className="meldArea" aria-label="副露">
+            <div className="meldArea" aria-label="\u526f\u9732">
               {question.melds.map((meld, index) => (
                 <MeldView key={`${question.id}-meld-${index}`} tiles={meld} />
               ))}
@@ -119,7 +124,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="panel choicesPanel" aria-label="回答する牌を選択">
+      <section className="panel choicesPanel" aria-label="\u56de\u7b54\u3059\u308b\u724c\u3092\u9078\u629e">
         <div className="choiceRows">
           {TILE_GROUPS.map((group) => (
             <div className="choiceRow" key={group.label} aria-label={group.label}>
@@ -144,7 +149,7 @@ export default function Home() {
             onClick={handleSubmit}
             disabled={hasSubmitted}
           >
-            解答する
+            {"\u89e3\u7b54\u3059\u308b"}
           </button>
           <button
             className="clearButton"
@@ -152,7 +157,7 @@ export default function Home() {
             onClick={handleClear}
             disabled={hasSubmitted || selectedTiles.length === 0}
           >
-            クリア
+            {"\u30af\u30ea\u30a2"}
           </button>
         </div>
       </section>
@@ -160,24 +165,24 @@ export default function Home() {
       {hasSubmitted && (
         <section className="panel resultPanel" aria-live="polite">
           <div className={isCorrect ? "resultBadge correct" : "resultBadge incorrect"}>
-            {isCorrect ? "正解！" : "不正解"}
+            {isCorrect ? "\u6b63\u89e3\uff01" : "\u4e0d\u6b63\u89e3"}
           </div>
 
           <div className="answerBlock">
-            <h2>自分が選んだ牌</h2>
+            <h2>{"\u81ea\u5206\u304c\u9078\u3093\u3060\u724c"}</h2>
             <div className="answerTiles">
               {selectedTiles.length > 0 ? (
                 selectedTiles.map((tileId) => (
                   <TileView key={`selected-${tileId}`} tileId={tileId} compact />
                 ))
               ) : (
-                <p className="emptySelection">選択なし</p>
+                <p className="emptySelection">{"\u9078\u629e\u306a\u3057"}</p>
               )}
             </div>
           </div>
 
           <div className="answerBlock">
-            <h2>正解牌一覧</h2>
+            <h2>{"\u6b63\u89e3\u724c\u4e00\u89a7"}</h2>
             <div className="answerTiles">
               {question.answers.map((tileId) => (
                 <TileView key={`answer-${tileId}`} tileId={tileId} compact />
@@ -186,12 +191,12 @@ export default function Home() {
           </div>
 
           <div className="explanationBlock">
-            <h2>解説</h2>
+            <h2>{"\u89e3\u8aac"}</h2>
             <p>{question.explanation}</p>
           </div>
 
           <button className="nextButton" type="button" onClick={handleNext}>
-            次の問題
+            {"\u6b21\u306e\u554f\u984c"}
           </button>
         </section>
       )}
