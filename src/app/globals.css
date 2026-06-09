@@ -59,7 +59,7 @@ p {
 }
 
 h1 {
-  margin-bottom: 10px;
+  margin-bottom: 0;
   font-size: clamp(2rem, 5vw, 3.5rem);
   line-height: 1.08;
 }
@@ -74,6 +74,25 @@ h2 {
   margin-bottom: 0;
   color: var(--muted);
   line-height: 1.8;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.versionBadge {
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 254, 250, 0.72);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .panel {

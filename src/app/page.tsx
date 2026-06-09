@@ -4,6 +4,7 @@ import { type CSSProperties, useEffect, useState } from "react";
 import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
+import { APP_VERSION } from "@/lib/appVersion";
 import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
 import { createRandomVariant, sortTilesByDisplayOrder, transformQuestion } from "@/lib/quizTransforms";
 
@@ -97,7 +98,10 @@ export default function Home() {
   return (
     <main className="appShell">
       <section className="quizHeader" aria-labelledby="app-title">
-        <h1 id="app-title">{"\u4e00\u5411\u8074\u306e\u53d7\u3051\u5165\u308c\u30c6\u30b9\u30c8"}</h1>
+        <div className="titleRow">
+          <h1 id="app-title">{"\u4e00\u5411\u8074\u306e\u53d7\u3051\u5165\u308c\u30c6\u30b9\u30c8"}</h1>
+          <span className="versionBadge">{APP_VERSION}</span>
+        </div>
         <p className="lead">
           {"13\u679a\u306e\u724c\u59ff\u3092\u898b\u3066\u3001\u3053\u306e\u724c\u3092\u5f15\u304f\u3068\u30c6\u30f3\u30d1\u30a4\u306b\u9032\u3080\u3068\u601d\u3046\u724c\u3092\u3059\u3079\u3066\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002"}
         </p>
