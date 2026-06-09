@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
@@ -112,7 +112,11 @@ export default function Home() {
         </div>
 
         <div className="handArea" aria-label="\u554f\u984c\u306e\u724c\u59ff">
-          <div className="closedTiles" aria-label="\u624b\u724c">
+          <div
+            className="closedTiles"
+            aria-label="\u624b\u724c"
+            style={{ "--hand-tile-count": question.hand.length } as CSSProperties}
+          >
             {question.hand.map((tileId, index) => (
               <TileView key={`${question.id}-${tileId}-${index}`} tileId={tileId} />
             ))}

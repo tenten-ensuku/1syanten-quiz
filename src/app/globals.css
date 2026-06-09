@@ -121,6 +121,15 @@ h2 {
   min-width: 0;
 }
 
+.closedTiles {
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.closedTiles .tile {
+  width: min(58px, calc(100% / var(--hand-tile-count, 13)));
+}
+
 .meldArea {
   margin-left: auto;
   padding-left: 14px;
@@ -375,7 +384,11 @@ h2 {
 
   .handArea {
     gap: 6px;
-    padding: 10px;
+    padding: 8px;
+  }
+
+  .questionPanel {
+    padding-inline: 10px;
   }
 
   .meldArea {
