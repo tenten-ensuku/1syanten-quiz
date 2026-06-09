@@ -104,11 +104,11 @@ h2 {
 .answerTiles {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
   align-items: center;
 }
 
 .handArea {
+  gap: 8px;
   padding: 14px;
   border: 1px dashed #bcc8bc;
   border-radius: 8px;
@@ -117,6 +117,7 @@ h2 {
 
 .closedTiles,
 .meldArea {
+  gap: 0;
   min-width: 0;
 }
 
@@ -129,7 +130,7 @@ h2 {
 .meld {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0;
   padding: 6px;
   border-radius: 8px;
   background: rgba(20, 124, 114, 0.08);
@@ -138,48 +139,48 @@ h2 {
 .tile {
   display: inline-flex;
   width: 58px;
-  height: 78px;
+  height: auto;
+  aspect-ratio: 66 / 90;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid #cad5cf;
-  border-radius: 6px;
-  background: var(--surface-strong);
-  box-shadow: 0 4px 10px var(--tile-shadow);
+  background: transparent;
 }
 
 .tileCompact {
   width: 42px;
-  height: 56px;
+  height: auto;
 }
 
 .tileSideways {
-  width: 78px;
-  height: 58px;
+  width: 90px;
+  height: 66px;
 }
 
 .tileCompact.tileSideways {
-  width: 56px;
-  height: 42px;
-}
-
-.tile img,
-.tileSprite {
-  display: block;
-  width: 100%;
-  height: 100%;
+  width: 66px;
+  height: 48px;
 }
 
 .tile img {
-  object-fit: contain;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  image-rendering: auto;
+  user-select: none;
 }
 
-.tileSprite {
-  background-repeat: no-repeat;
-  background-origin: content-box;
-  background-clip: content-box;
-  image-rendering: auto;
+.tileSideways img {
+  width: 66px;
+  height: 90px;
+  transform: rotate(90deg);
+}
+
+.tileCompact.tileSideways img {
+  width: 48px;
+  height: 66px;
 }
 
 .tileFallback {
@@ -337,6 +338,10 @@ h2 {
   font-size: 1rem;
 }
 
+.answerTiles {
+  gap: 0;
+}
+
 .explanationBlock p {
   margin-bottom: 0;
   line-height: 1.8;
@@ -384,22 +389,32 @@ h2 {
 
   .tile {
     width: 44px;
-    height: 60px;
+    height: auto;
   }
 
   .tileCompact {
     width: 38px;
-    height: 50px;
+    height: auto;
   }
 
   .tileSideways {
-    width: 60px;
-    height: 44px;
+    width: 66px;
+    height: 48px;
   }
 
   .tileCompact.tileSideways {
-    width: 50px;
-    height: 38px;
+    width: 54px;
+    height: 40px;
+  }
+
+  .tileSideways img {
+    width: 48px;
+    height: 66px;
+  }
+
+  .tileCompact.tileSideways img {
+    width: 40px;
+    height: 54px;
   }
 
   .choiceRows {

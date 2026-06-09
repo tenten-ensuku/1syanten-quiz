@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import "./tile-sprite.css";
 
 export const metadata: Metadata = {
   title: "一向聴の受け入れテスト",

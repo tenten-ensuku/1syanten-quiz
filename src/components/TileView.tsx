@@ -1,7 +1,6 @@
 "use client";
 
-import { HONOR_TILE_IDS, TileId, getTileLabel } from "@/lib/quizData";
-import { getSpriteInfo } from "@/lib/tileSprites";
+import { TileId, getTileLabel } from "@/lib/quizData";
 
 type TileViewProps = {
   tileId: TileId;
@@ -9,20 +8,37 @@ type TileViewProps = {
   sideways?: boolean;
 };
 
-const tileAssetBase =
-  "https://raw.githubusercontent.com/wataruM2001/1syanten-quiz/main/public/tiles";
+const SUIT_PREFIX = {
+  m: "man",
+  p: "pin",
+  s: "sou"
+} as const;
+
+const HONOR_FILE_INDEX: Record<"ton" | "nan" | "sha" | "pei" | "haku" | "hatsu" | "chun", number> = {
+  ton: 1,
+  nan: 2,
+  sha: 3,
+  pei: 4,
+  haku: 5,
+  hatsu: 6,
+  chun: 7
+};
+
+const TILE_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+function getTileImagePath(tileId: TileId) {
+  const suitedTile = tileId.match(/^([1-9])([mps])$/);
+
+  if (suitedTile) {
+    const [, number, suit] = suitedTile;
+    return `${TILE_BASE_PATH}/tiles/${SUIT_PREFIX[suit as keyof typeof SUIT_PREFIX]}${number}-66-90-l.png`;
+  }
+
+  return `${TILE_BASE_PATH}/tiles/ji${HONOR_FILE_INDEX[tileId as keyof typeof HONOR_FILE_INDEX]}-66-90-l.png`;
+}
 
 export function TileView({ tileId, compact = false, sideways = false }: TileViewProps) {
   const label = tileId === "hatsu" ? "發" : getTileLabel(tileId);
-  const sprite = getSpriteInfo(tileId, sideways);
-  const spriteX =
-    sprite && sprite.sheetWidth !== sprite.cellWidth
-      ? (sprite.x / (sprite.sheetWidth - sprite.cellWidth)) * 100
-      : 0;
-  const spriteY =
-    sprite && sprite.sheetHeight !== sprite.cellHeight
-      ? (sprite.y / (sprite.sheetHeight - sprite.cellHeight)) * 100
-      : 0;
   const className = [
     "tile",
     compact ? "tileCompact" : "",
@@ -33,31 +49,7 @@ export function TileView({ tileId, compact = false, sideways = false }: TileView
 
   return (
     <span className={className} aria-label={label}>
-      {sprite ? (
-        <span
-          className="tileSprite"
-          role="img"
-          aria-label={label}
-          style={{
-            backgroundImage: `url("${tileAssetBase}/${sprite.file}")`,
-            backgroundPosition: `${spriteX}% ${spriteY}%`,
-            backgroundSize: `${(sprite.sheetWidth / sprite.cellWidth) * 100}% ${(sprite.sheetHeight / sprite.cellHeight) * 100}%`
-          }}
-        />
-      ) : HONOR_TILE_IDS.includes(tileId as (typeof HONOR_TILE_IDS)[number]) ? (
-        <span
-          className="tileSprite"
-          role="img"
-          aria-label={label}
-          style={{
-            backgroundImage: `url("${tileAssetBase}/${tileId}.svg")`,
-            backgroundPosition: "center",
-            backgroundSize: "100% 100%"
-          }}
-        />
-      ) : (
-        <span className="tileFallback" aria-hidden="true" />
-      )}
+      <img src={getTileImagePath(tileId)} alt={label} width={66} height={90} draggable={false} />
     </span>
   );
 }
