@@ -1,4 +1,5 @@
 import { ALL_TILE_IDS, QuizQuestion, TileId } from "./quizData";
+import { GENERATED_EXPLANATIONS } from "./generatedExplanations";
 
 type Suit = "m" | "p" | "s";
 type SuitMap = Record<Suit, Suit>;
@@ -33,8 +34,17 @@ const REVERSED_NUMBER_MAP: Record<string, string> = {
   "9": "1"
 };
 
-const GENERIC_EXPLANATION =
-  "\u6b63\u89e3\u724c\u3092\u52a0\u3048\u308b\u3053\u3068\u3067\u3001\u672a\u5b8c\u6210\u30d6\u30ed\u30c3\u30af\u304c\u5b8c\u6210\u30fb\u5f37\u5316\u3055\u308c\u3001\u30c6\u30f3\u30d1\u30a4\u306b\u9032\u3080\u724c\u59ff\u306b\u306a\u308a\u307e\u3059\u3002\u6b63\u89e3\u724c\u4e00\u89a7\u3092\u898b\u306a\u304c\u3089\u3001\u3069\u306e\u30d6\u30ed\u30c3\u30af\u304c\u5b8c\u6210\u30fb\u5f37\u5316\u3055\u308c\u308b\u304b\u78ba\u8a8d\u3057\u307e\u3057\u3087\u3046\u3002";
+const TILE_SORT_ORDER = new Map<TileId, number>(
+  ALL_TILE_IDS.map((tileId, index) => [tileId, index])
+);
+
+export function compareTileIds(left: TileId, right: TileId) {
+  return (TILE_SORT_ORDER.get(left) ?? 0) - (TILE_SORT_ORDER.get(right) ?? 0);
+}
+
+export function sortTilesByDisplayOrder(tileIds: TileId[]) {
+  return [...tileIds].sort(compareTileIds);
+}
 
 function isTileId(value: string): value is TileId {
   return ALL_TILE_IDS.includes(value as TileId);
@@ -72,14 +82,26 @@ export function transformQuestion(
   suitMap: SuitMap,
   shouldReverseNumbers: boolean
 ): QuizQuestionVariant {
+  const hand = sortTilesByDisplayOrder(
+    question.hand.map((tileId) => transformTile(tileId, suitMap, shouldReverseNumbers))
+  );
+  const melds = question.melds
+    .map((meld) =>
+      sortTilesByDisplayOrder(
+        meld.map((tileId) => transformTile(tileId, suitMap, shouldReverseNumbers))
+      )
+    )
+    .sort((left, right) => compareTileIds(left[0] ?? "1m", right[0] ?? "1m"));
+  const answers = sortTilesByDisplayOrder(
+    question.answers.map((tileId) => transformTile(tileId, suitMap, shouldReverseNumbers))
+  );
+
   return {
     ...question,
-    hand: question.hand.map((tileId) => transformTile(tileId, suitMap, shouldReverseNumbers)),
-    melds: question.melds.map((meld) =>
-      meld.map((tileId) => transformTile(tileId, suitMap, shouldReverseNumbers))
-    ),
-    answers: question.answers.map((tileId) => transformTile(tileId, suitMap, shouldReverseNumbers)),
-    explanation: GENERIC_EXPLANATION,
+    hand,
+    melds,
+    answers,
+    explanation: GENERATED_EXPLANATIONS[question.source] ?? question.explanation,
     variantInfo: {
       suitMap,
       shouldReverseNumbers

@@ -5,7 +5,7 @@ import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
 import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
-import { createRandomVariant, transformQuestion } from "@/lib/quizTransforms";
+import { createRandomVariant, sortTilesByDisplayOrder, transformQuestion } from "@/lib/quizTransforms";
 
 function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   if (selectedTiles.length !== answers.length) {
@@ -53,6 +53,7 @@ export default function Home() {
   }, []);
 
   const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
+  const sortedSelectedTiles = sortTilesByDisplayOrder(selectedTiles);
 
   const handleSelect = (tileId: TileId) => {
     if (hasSubmitted) {
@@ -175,7 +176,7 @@ export default function Home() {
             <h2>{"\u81ea\u5206\u304c\u9078\u3093\u3060\u724c"}</h2>
             <div className="answerTiles">
               {selectedTiles.length > 0 ? (
-                selectedTiles.map((tileId) => (
+                sortedSelectedTiles.map((tileId) => (
                   <TileView key={`selected-${tileId}`} tileId={tileId} compact />
                 ))
               ) : (
