@@ -35,6 +35,20 @@ const TILE_GROUPS: { label: string; tiles: TileId[] }[] = [
   { label: "\u5b57\u724c", tiles: ["ton", "nan", "sha", "pei", "haku", "hatsu", "chun"] }
 ];
 
+function createBlockedTileSet(hand: TileId[], melds: TileId[][]) {
+  const counts = new Map<TileId, number>();
+
+  for (const tileId of [...hand, ...melds.flat()]) {
+    counts.set(tileId, (counts.get(tileId) ?? 0) + 1);
+  }
+
+  return new Set(
+    [...counts.entries()]
+      .filter(([, count]) => count >= 4)
+      .map(([tileId]) => tileId)
+  );
+}
+
 export default function Home() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [questionOrder, setQuestionOrder] = useState<number[]>(() =>
@@ -57,9 +71,10 @@ export default function Home() {
 
   const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
   const sortedSelectedTiles = sortTilesByDisplayOrder(selectedTiles);
+  const blockedTiles = createBlockedTileSet(question.hand, question.melds);
 
   const handleSelect = (tileId: TileId) => {
-    if (hasSubmitted) {
+    if (hasSubmitted || blockedTiles.has(tileId)) {
       return;
     }
 
@@ -71,7 +86,7 @@ export default function Home() {
   };
 
   const pushTileDuringPointerSelect = (tileId: TileId) => {
-    if (hasSubmitted || pointerSelectedTilesRef.current.has(tileId)) {
+    if (hasSubmitted || blockedTiles.has(tileId) || pointerSelectedTilesRef.current.has(tileId)) {
       return;
     }
 
@@ -203,7 +218,8 @@ export default function Home() {
                   tileId={tileId}
                   isSelected={selectedTiles.includes(tileId)}
                   isAnswer={hasSubmitted && question.answers.includes(tileId)}
-                  isDisabled={hasSubmitted}
+                  isBlocked={blockedTiles.has(tileId)}
+                  isDisabled={hasSubmitted || blockedTiles.has(tileId)}
                   onSelect={handleSelect}
                   onPointerSelectStart={handlePointerSelectStart}
                 />

@@ -292,6 +292,11 @@ h2 {
   background: var(--correct-bg);
 }
 
+.tileChoice.blocked:not(.answer) {
+  opacity: 0.38;
+  filter: grayscale(0.85);
+}
+
 .choiceActions {
   display: flex;
   flex-wrap: wrap;

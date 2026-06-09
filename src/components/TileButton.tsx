@@ -8,6 +8,7 @@ type TileButtonProps = {
   tileId: TileId;
   isSelected: boolean;
   isAnswer: boolean;
+  isBlocked: boolean;
   isDisabled: boolean;
   onSelect: (tileId: TileId) => void;
   onPointerSelectStart: (tileId: TileId, event: PointerEvent<HTMLButtonElement>) => void;
@@ -17,6 +18,7 @@ export function TileButton({
   tileId,
   isSelected,
   isAnswer,
+  isBlocked,
   isDisabled,
   onSelect,
   onPointerSelectStart
@@ -25,7 +27,8 @@ export function TileButton({
   const className = [
     "tileChoice",
     isSelected ? "selected" : "",
-    isAnswer ? "answer" : ""
+    isAnswer ? "answer" : "",
+    isBlocked ? "blocked" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -43,7 +46,7 @@ export function TileButton({
       onPointerDown={(event) => onPointerSelectStart(tileId, event)}
       disabled={isDisabled}
       aria-pressed={isSelected}
-      aria-label={`${label}を選択`}
+      aria-label={isBlocked ? `${label}は4枚使用済み` : `${label}を選択`}
     >
       <TileView tileId={tileId} compact />
     </button>
