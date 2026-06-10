@@ -1,12 +1,39 @@
 "use client";
 
-import { type CSSProperties, type PointerEvent, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type PointerEvent,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
 import { APP_VERSION } from "@/lib/appVersion";
 import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
-import { createRandomVariant, sortTilesByDisplayOrder, transformQuestion } from "@/lib/quizTransforms";
+import { createRandomVariant, sortTilesByDisplayOrder } from "@/lib/quizTransforms";
+
+type QuestionStats = {
+  attempts: number;
+  correct: number;
+  totalCorrectMs: number;
+};
+
+type StatsByQuestion = Record<string, QuestionStats>;
+
+type PlaySession = {
+  mode: "single" | "timeAttack";
+  order: number[];
+  position: number;
+  totalMs: number;
+  correctCount: number;
+  answeredCount: number;
+};
+
+type ViewMode = "menu" | "quiz" | "timeAttackComplete";
+
+const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
 
 function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   if (selectedTiles.length !== answers.length) {
@@ -17,7 +44,7 @@ function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   return answers.every((tileId) => selectedSet.has(tileId));
 }
 
-function createShuffledQuestionIndexes() {
+function createShuffledQuestionIndexes(limit = QUIZ_QUESTIONS.length) {
   const indexes = QUIZ_QUESTIONS.map((_, index) => index);
 
   for (let index = indexes.length - 1; index > 0; index -= 1) {
@@ -25,14 +52,14 @@ function createShuffledQuestionIndexes() {
     [indexes[index], indexes[randomIndex]] = [indexes[randomIndex], indexes[index]];
   }
 
-  return indexes;
+  return indexes.slice(0, limit);
 }
 
 const TILE_GROUPS: { label: string; tiles: TileId[] }[] = [
-  { label: "\u842c\u5b50", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
-  { label: "\u7b52\u5b50", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
-  { label: "\u7d22\u5b50", tiles: ["1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s"] },
-  { label: "\u5b57\u724c", tiles: ["ton", "nan", "sha", "pei", "haku", "hatsu", "chun"] }
+  { label: "萬子", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
+  { label: "筒子", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
+  { label: "索子", tiles: ["1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s"] },
+  { label: "字牌", tiles: ["ton", "nan", "sha", "pei", "haku", "hatsu", "chun"] }
 ];
 
 function createBlockedTileSet(hand: TileId[], melds: TileId[][]) {
@@ -49,29 +76,118 @@ function createBlockedTileSet(hand: TileId[], melds: TileId[][]) {
   );
 }
 
+function loadStats(): StatsByQuestion {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const rawStats = window.localStorage.getItem(STATS_STORAGE_KEY);
+    return rawStats ? (JSON.parse(rawStats) as StatsByQuestion) : {};
+  } catch {
+    return {};
+  }
+}
+
+function getStats(stats: StatsByQuestion, questionId: string): QuestionStats {
+  return stats[questionId] ?? { attempts: 0, correct: 0, totalCorrectMs: 0 };
+}
+
+function formatRate(stat: QuestionStats) {
+  if (stat.attempts === 0) {
+    return "未挑戦";
+  }
+
+  return `${Math.round((stat.correct / stat.attempts) * 100)}%`;
+}
+
+function formatTime(ms: number) {
+  return `${(ms / 1000).toFixed(2)}秒`;
+}
+
+function formatAverageCorrectTime(stat: QuestionStats) {
+  if (stat.correct === 0) {
+    return "未記録";
+  }
+
+  return formatTime(stat.totalCorrectMs / stat.correct);
+}
+
 export default function Home() {
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [questionOrder, setQuestionOrder] = useState<number[]>(() =>
-    QUIZ_QUESTIONS.map((_, index) => index)
-  );
-  const [question, setQuestion] = useState(() =>
-    transformQuestion(QUIZ_QUESTIONS[0], { m: "m", p: "p", s: "s" }, false)
-  );
+  const [viewMode, setViewMode] = useState<ViewMode>("menu");
+  const [session, setSession] = useState<PlaySession | null>(null);
+  const [question, setQuestion] = useState(() => createRandomVariant(QUIZ_QUESTIONS[0]));
   const [selectedTiles, setSelectedTiles] = useState<TileId[]>([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [lastAnswerMs, setLastAnswerMs] = useState(0);
+  const [stats, setStats] = useState<StatsByQuestion>({});
+  const [hasLoadedStats, setHasLoadedStats] = useState(false);
+  const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
   const isPointerSelectingRef = useRef(false);
   const pointerSelectedTilesRef = useRef(new Set<TileId>());
 
   useEffect(() => {
-    const nextOrder = createShuffledQuestionIndexes();
-    setQuestionOrder(nextOrder);
-    setQuestionIndex(0);
-    setQuestion(createRandomVariant(QUIZ_QUESTIONS[nextOrder[0] ?? 0]));
+    setStats(loadStats());
+    setHasLoadedStats(true);
   }, []);
+
+  useEffect(() => {
+    if (hasLoadedStats) {
+      window.localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(stats));
+    }
+  }, [hasLoadedStats, stats]);
 
   const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
   const sortedSelectedTiles = sortTilesByDisplayOrder(selectedTiles);
   const blockedTiles = createBlockedTileSet(question.hand, question.melds);
+  const currentBaseIndex = session?.order[session.position] ?? 0;
+  const currentProgress =
+    session?.mode === "timeAttack"
+      ? `${session.position + 1} / ${session.order.length}`
+      : `${currentBaseIndex + 1} / ${QUIZ_QUESTIONS.length}`;
+
+  const loadQuestion = (baseIndex: number) => {
+    setQuestion(createRandomVariant(QUIZ_QUESTIONS[baseIndex]));
+    setSelectedTiles([]);
+    setHasSubmitted(false);
+    setLastAnswerMs(0);
+    setQuestionStartedAt(performance.now());
+  };
+
+  const startSingleQuestion = (baseIndex: number) => {
+    setSession({
+      mode: "single",
+      order: [baseIndex],
+      position: 0,
+      totalMs: 0,
+      correctCount: 0,
+      answeredCount: 0
+    });
+    loadQuestion(baseIndex);
+    setViewMode("quiz");
+  };
+
+  const startTimeAttack = () => {
+    const order = createShuffledQuestionIndexes(10);
+    setSession({
+      mode: "timeAttack",
+      order,
+      position: 0,
+      totalMs: 0,
+      correctCount: 0,
+      answeredCount: 0
+    });
+    loadQuestion(order[0] ?? 0);
+    setViewMode("quiz");
+  };
+
+  const returnToMenu = () => {
+    setViewMode("menu");
+    setQuestionStartedAt(null);
+    setSession(null);
+    setSelectedTiles([]);
+    setHasSubmitted(false);
+  };
 
   const handleSelect = (tileId: TileId) => {
     if (hasSubmitted || blockedTiles.has(tileId)) {
@@ -130,7 +246,36 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
+    if (hasSubmitted) {
+      return;
+    }
+
+    const answerMs = questionStartedAt ? performance.now() - questionStartedAt : 0;
+    const correct = isSameTileSet(selectedTiles, question.answers);
+    setLastAnswerMs(answerMs);
     setHasSubmitted(true);
+    setQuestionStartedAt(null);
+    setStats((current) => {
+      const previous = getStats(current, question.id);
+      return {
+        ...current,
+        [question.id]: {
+          attempts: previous.attempts + 1,
+          correct: previous.correct + (correct ? 1 : 0),
+          totalCorrectMs: previous.totalCorrectMs + (correct ? answerMs : 0)
+        }
+      };
+    });
+    setSession((current) =>
+      current?.mode === "timeAttack"
+        ? {
+            ...current,
+            totalMs: current.totalMs + answerMs,
+            correctCount: current.correctCount + (correct ? 1 : 0),
+            answeredCount: current.answeredCount + 1
+          }
+        : current
+    );
   };
 
   const handleClear = () => {
@@ -140,46 +285,118 @@ export default function Home() {
   };
 
   const handleNext = () => {
-    const nextIndex = questionIndex + 1;
-
-    if (nextIndex >= QUIZ_QUESTIONS.length) {
-      const nextOrder = createShuffledQuestionIndexes();
-      setQuestionOrder(nextOrder);
-      setQuestionIndex(0);
-      setQuestion(createRandomVariant(QUIZ_QUESTIONS[nextOrder[0] ?? 0]));
-    } else {
-      setQuestionIndex(nextIndex);
-      setQuestion(createRandomVariant(QUIZ_QUESTIONS[questionOrder[nextIndex] ?? 0]));
+    if (!session || session.mode === "single") {
+      returnToMenu();
+      return;
     }
 
-    setSelectedTiles([]);
-    setHasSubmitted(false);
+    const nextPosition = session.position + 1;
+
+    if (nextPosition >= session.order.length) {
+      setViewMode("timeAttackComplete");
+      setQuestionStartedAt(null);
+      return;
+    }
+
+    const nextSession = { ...session, position: nextPosition };
+    setSession(nextSession);
+    loadQuestion(nextSession.order[nextPosition] ?? 0);
   };
 
-  return (
-    <main className="appShell">
+  const renderMenu = () => (
+    <>
       <section className="quizHeader" aria-labelledby="app-title">
         <div className="titleRow">
-          <h1 id="app-title">{"\u4e00\u5411\u8074\u306e\u53d7\u3051\u5165\u308c\u30c6\u30b9\u30c8"}</h1>
+          <h1 id="app-title">一向聴の受け入れテスト</h1>
           <span className="versionBadge">{APP_VERSION}</span>
         </div>
         <p className="lead">
-          {"13\u679a\u306e\u724c\u59ff\u3092\u898b\u3066\u3001\u3053\u306e\u724c\u3092\u5f15\u304f\u3068\u30c6\u30f3\u30d1\u30a4\u306b\u9032\u3080\u3068\u601d\u3046\u724c\u3092\u3059\u3079\u3066\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002"}
+          宿題感はそのままに、毎日少しずつ遊べる受け入れドリルへ。
         </p>
+      </section>
+
+      <section className="panel menuPanel" aria-labelledby="menu-title">
+        <div className="menuHero">
+          <div>
+            <h2 id="menu-title">メニュー</h2>
+            <p className="lead">
+              8問×7日分、全56種。問題別の正答率と平均正解回答時間を保存します。
+            </p>
+          </div>
+          <button className="timeAttackButton" type="button" onClick={startTimeAttack}>
+            ランダム10問タイムアタック
+          </button>
+        </div>
+      </section>
+
+      <section className="panel questionListPanel" aria-labelledby="question-list-title">
+        <div className="sectionTitleRow">
+          <h2 id="question-list-title">問題一覧</h2>
+          <span className="questionCount">56種収録</span>
+        </div>
+        <div className="questionList">
+          {QUIZ_QUESTIONS.map((baseQuestion, index) => {
+            const stat = getStats(stats, baseQuestion.id);
+            return (
+              <button
+                className="questionListItem"
+                key={baseQuestion.id}
+                type="button"
+                onClick={() => startSingleQuestion(index)}
+              >
+                <span className="problemId">{baseQuestion.id}</span>
+                <span className="problemSource">{baseQuestion.source}</span>
+                <span className="statPill">正答率 {formatRate(stat)}</span>
+                <span className="statPill">平均 {formatAverageCorrectTime(stat)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    </>
+  );
+
+  const renderTimeAttackComplete = () => (
+    <section className="panel completionPanel" aria-labelledby="completion-title">
+      <h2 id="completion-title">タイムアタック完走</h2>
+      <div className="completionStats">
+        <span>正解 {session?.correctCount ?? 0} / {session?.answeredCount ?? 0}</span>
+        <span>回答時間 {formatTime(session?.totalMs ?? 0)}</span>
+      </div>
+      <button className="nextButton" type="button" onClick={returnToMenu}>
+        メニューへ
+      </button>
+    </section>
+  );
+
+  const renderQuiz = () => (
+    <>
+      <section className="quizHeader" aria-labelledby="app-title">
+        <div className="titleRow">
+          <h1 id="app-title">一向聴の受け入れテスト</h1>
+          <span className="versionBadge">{APP_VERSION}</span>
+        </div>
+        <div className="playMeta">
+          <span>{session?.mode === "timeAttack" ? "ランダム10問" : "問題一覧"}</span>
+          {session?.mode === "timeAttack" && (
+            <span>回答中のみ計時: {formatTime(session.totalMs)}</span>
+          )}
+          <button className="menuBackButton" type="button" onClick={returnToMenu}>
+            メニューへ
+          </button>
+        </div>
       </section>
 
       <section className="panel questionPanel" aria-labelledby="question-title">
         <div className="sectionTitleRow">
-          <h2 id="question-title">{"\u554f\u984c"} {questionIndex + 1}</h2>
-          <span className="questionCount">
-            {questionIndex + 1} / {QUIZ_QUESTIONS.length}
-          </span>
+          <h2 id="question-title">問題 {question.id}</h2>
+          <span className="questionCount">{currentProgress}</span>
         </div>
 
-        <div className="handArea" aria-label="\u554f\u984c\u306e\u724c\u59ff">
+        <div className="handArea" aria-label="問題の牌姿">
           <div
             className="closedTiles"
-            aria-label="\u624b\u724c"
+            aria-label="手牌"
             style={{ "--hand-tile-count": question.hand.length } as CSSProperties}
           >
             {question.hand.map((tileId, index) => (
@@ -188,7 +405,7 @@ export default function Home() {
           </div>
 
           {question.melds.length > 0 && (
-            <div className="meldArea" aria-label="\u526f\u9732">
+            <div className="meldArea" aria-label="副露">
               {question.melds.map((meld, index) => (
                 <MeldView key={`${question.id}-meld-${index}`} tiles={meld} />
               ))}
@@ -197,7 +414,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="panel choicesPanel" aria-label="\u56de\u7b54\u3059\u308b\u724c\u3092\u9078\u629e">
+      <section className="panel choicesPanel" aria-label="回答する牌を選択">
         <div
           className="choiceRows"
           onPointerMove={handlePointerSelectMove}
@@ -235,7 +452,7 @@ export default function Home() {
             onClick={handleSubmit}
             disabled={hasSubmitted}
           >
-            {"\u89e3\u7b54\u3059\u308b"}
+            解答する
           </button>
           <button
             className="clearButton"
@@ -243,7 +460,7 @@ export default function Home() {
             onClick={handleClear}
             disabled={hasSubmitted || selectedTiles.length === 0}
           >
-            {"\u30af\u30ea\u30a2"}
+            クリア
           </button>
         </div>
       </section>
@@ -251,24 +468,26 @@ export default function Home() {
       {hasSubmitted && (
         <section className="panel resultPanel" aria-live="polite">
           <div className={isCorrect ? "resultBadge correct" : "resultBadge incorrect"}>
-            {isCorrect ? "\u6b63\u89e3\uff01" : "\u4e0d\u6b63\u89e3"}
+            {isCorrect ? "正解！" : "不正解"}
           </div>
 
+          <p className="answerTime">回答時間 {formatTime(lastAnswerMs)}</p>
+
           <div className="answerBlock">
-            <h2>{"\u81ea\u5206\u304c\u9078\u3093\u3060\u724c"}</h2>
+            <h2>自分が選んだ牌</h2>
             <div className="answerTiles">
               {selectedTiles.length > 0 ? (
                 sortedSelectedTiles.map((tileId) => (
                   <TileView key={`selected-${tileId}`} tileId={tileId} compact />
                 ))
               ) : (
-                <p className="emptySelection">{"\u9078\u629e\u306a\u3057"}</p>
+                <p className="emptySelection">選択なし</p>
               )}
             </div>
           </div>
 
           <div className="answerBlock">
-            <h2>{"\u6b63\u89e3\u724c\u4e00\u89a7"}</h2>
+            <h2>正解牌一覧</h2>
             <div className="answerTiles">
               {question.answers.map((tileId) => (
                 <TileView key={`answer-${tileId}`} tileId={tileId} compact />
@@ -277,15 +496,27 @@ export default function Home() {
           </div>
 
           <div className="explanationBlock">
-            <h2>{"\u89e3\u8aac"}</h2>
+            <h2>解説</h2>
             <p>{question.explanation}</p>
           </div>
 
           <button className="nextButton" type="button" onClick={handleNext}>
-            {"\u6b21\u306e\u554f\u984c"}
+            {session?.mode === "timeAttack"
+              ? session.position + 1 >= session.order.length
+                ? "結果を見る"
+                : "次の問題"
+              : "問題一覧へ"}
           </button>
         </section>
       )}
+    </>
+  );
+
+  return (
+    <main className="appShell">
+      {viewMode === "menu" && renderMenu()}
+      {viewMode === "quiz" && renderQuiz()}
+      {viewMode === "timeAttackComplete" && renderTimeAttackComplete()}
     </main>
   );
 }

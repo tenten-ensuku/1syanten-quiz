@@ -23,7 +23,7 @@ export function TileButton({
   onSelect,
   onPointerSelectStart
 }: TileButtonProps) {
-  const label = tileId === "hatsu" ? "發" : getTileLabel(tileId);
+  const label = getTileLabel(tileId);
   const className = [
     "tileChoice",
     isSelected ? "selected" : "",

@@ -1,5 +1,4 @@
 import { ALL_TILE_IDS, QuizQuestion, TileId } from "./quizData";
-import { GENERATED_EXPLANATIONS } from "./generatedExplanations";
 
 type Suit = "m" | "p" | "s";
 type SuitMap = Record<Suit, Suit>;
@@ -101,7 +100,6 @@ export function transformQuestion(
     hand,
     melds,
     answers,
-    explanation: GENERATED_EXPLANATIONS[question.source] ?? question.explanation,
     variantInfo: {
       suitMap,
       shouldReverseNumbers

@@ -95,6 +95,114 @@ h2 {
   line-height: 1.2;
 }
 
+.menuHero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.menuHero h2 {
+  margin-bottom: 8px;
+}
+
+.timeAttackButton,
+.menuBackButton {
+  min-height: 44px;
+  border-radius: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.timeAttackButton {
+  flex: 0 0 auto;
+  padding: 12px 18px;
+  border: 0;
+  color: #ffffff;
+  background: var(--accent);
+}
+
+.timeAttackButton:hover {
+  background: var(--accent-strong);
+}
+
+.questionList {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.questionListItem {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 112px 128px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.questionListItem:last-child {
+  border-bottom: 0;
+}
+
+.questionListItem:hover {
+  background: rgba(20, 124, 114, 0.08);
+}
+
+.problemId {
+  color: var(--accent-strong);
+  font-weight: 900;
+}
+
+.problemSource {
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statPill {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.playMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.menuBackButton {
+  min-height: 36px;
+  margin-left: auto;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: var(--surface-strong);
+}
+
+.menuBackButton:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
 .panel {
   margin-top: 18px;
   padding: 20px;
@@ -363,6 +471,12 @@ h2 {
   background: var(--incorrect-bg);
 }
 
+.answerTime {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
 .selectedText {
   margin-bottom: 0;
 }
@@ -404,6 +518,25 @@ h2 {
   background: var(--accent-strong);
 }
 
+.completionPanel {
+  display: grid;
+  gap: 18px;
+}
+
+.completionStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.completionStats span {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+  font-weight: 900;
+}
+
 @media (max-width: 640px) {
   .appShell {
     width: min(100% - 20px, 1080px);
@@ -412,6 +545,38 @@ h2 {
 
   .panel {
     padding: 14px;
+  }
+
+  .menuHero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .timeAttackButton {
+    width: 100%;
+  }
+
+  .questionListItem {
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 4px 8px;
+  }
+
+  .problemSource {
+    font-size: 0.82rem;
+  }
+
+  .statPill {
+    text-align: left;
+  }
+
+  .playMeta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .menuBackButton {
+    width: 100%;
+    margin-left: 0;
   }
 
   .handArea {
