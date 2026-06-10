@@ -497,6 +497,20 @@ h2 {
   gap: 0;
 }
 
+.explanationImageFrame {
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.explanationImage {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .explanationBlock p {
   margin-bottom: 0;
   line-height: 1.8;

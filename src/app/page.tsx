@@ -12,7 +12,7 @@ import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
 import { APP_VERSION } from "@/lib/appVersion";
 import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
-import { createRandomVariant, sortTilesByDisplayOrder } from "@/lib/quizTransforms";
+import { createRandomVariant } from "@/lib/quizTransforms";
 
 type QuestionStats = {
   attempts: number;
@@ -34,6 +34,12 @@ type PlaySession = {
 type ViewMode = "menu" | "quiz" | "timeAttackComplete";
 
 const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+type ExplanationAsset = {
+  src: string;
+  alt: string;
+};
 
 function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   if (selectedTiles.length !== answers.length) {
@@ -113,6 +119,35 @@ function formatAverageCorrectTime(stat: QuestionStats) {
   return formatTime(stat.totalCorrectMs / stat.correct);
 }
 
+function createExplanationAsset(filename: string, alt: string): ExplanationAsset {
+  return {
+    src: `${BASE_PATH}/explanation-assets/${filename}`,
+    alt
+  };
+}
+
+function getExplanationAsset(explanation: string): ExplanationAsset | null {
+  const firstSentence = explanation.split("。")[0] ?? explanation;
+
+  if (/ヘッドレス[１1]型/.test(firstSentence)) {
+    return createExplanationAsset("03_headless1.png", "3面子 ヘッドレス1型の解説図");
+  }
+
+  if (/ヘッドレス[２2]型/.test(firstSentence)) {
+    return createExplanationAsset("04_headless2.png", "3面子 ヘッドレス2型の解説図");
+  }
+
+  if (firstSentence.includes("完全形")) {
+    return createExplanationAsset("02_complete.png", "2面子 完全形の解説図");
+  }
+
+  if (/余剰牌[型形]/.test(firstSentence)) {
+    return createExplanationAsset("01_extra_tile.png", "2面子 余剰牌型の解説図");
+  }
+
+  return null;
+}
+
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("menu");
   const [session, setSession] = useState<PlaySession | null>(null);
@@ -138,7 +173,7 @@ export default function Home() {
   }, [hasLoadedStats, stats]);
 
   const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
-  const sortedSelectedTiles = sortTilesByDisplayOrder(selectedTiles);
+  const explanationAsset = getExplanationAsset(question.explanation);
   const blockedTiles = createBlockedTileSet(question.hand, question.melds);
   const currentBaseIndex = session?.order[session.position] ?? 0;
   const currentProgress =
@@ -474,19 +509,6 @@ export default function Home() {
           <p className="answerTime">回答時間 {formatTime(lastAnswerMs)}</p>
 
           <div className="answerBlock">
-            <h2>自分が選んだ牌</h2>
-            <div className="answerTiles">
-              {selectedTiles.length > 0 ? (
-                sortedSelectedTiles.map((tileId) => (
-                  <TileView key={`selected-${tileId}`} tileId={tileId} compact />
-                ))
-              ) : (
-                <p className="emptySelection">選択なし</p>
-              )}
-            </div>
-          </div>
-
-          <div className="answerBlock">
             <h2>正解牌一覧</h2>
             <div className="answerTiles">
               {question.answers.map((tileId) => (
@@ -497,6 +519,15 @@ export default function Home() {
 
           <div className="explanationBlock">
             <h2>解説</h2>
+            {explanationAsset && (
+              <div className="explanationImageFrame">
+                <img
+                  className="explanationImage"
+                  src={explanationAsset.src}
+                  alt={explanationAsset.alt}
+                />
+              </div>
+            )}
             <p>{question.explanation}</p>
           </div>
 
