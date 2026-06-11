@@ -11,7 +11,7 @@ import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
 import { APP_VERSION } from "@/lib/appVersion";
-import { QUIZ_QUESTIONS, ShantenType, TileId } from "@/lib/quizData";
+import { HONOR_TILE_IDS, QUIZ_QUESTIONS, ShantenType, TileId } from "@/lib/quizData";
 import { createRandomVariant } from "@/lib/quizTransforms";
 
 type QuestionStats = {
@@ -32,6 +32,7 @@ type PlaySession = {
 };
 
 type ViewMode = "menu" | "quiz" | "timeAttackComplete";
+type TileChoiceGroup = { label: string; tiles: TileId[] };
 
 const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -61,12 +62,26 @@ function createShuffledQuestionIndexes(limit = QUIZ_QUESTIONS.length) {
   return indexes.slice(0, limit);
 }
 
-const TILE_GROUPS: { label: string; tiles: TileId[] }[] = [
+const TILE_GROUPS: TileChoiceGroup[] = [
   { label: "萬子", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
   { label: "筒子", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
   { label: "索子", tiles: ["1s", "2s", "3s", "4s", "5s", "6s", "7s", "8s", "9s"] },
   { label: "字牌", tiles: ["ton", "nan", "sha", "pei", "haku", "hatsu", "chun"] }
 ];
+
+function createVisibleTileGroups(hand: TileId[], melds: TileId[][]): TileChoiceGroup[] {
+  const visibleTileSet = new Set([...hand, ...melds.flat()]);
+  const visibleGroups = TILE_GROUPS.slice(0, 3).filter((group) =>
+    group.tiles.some((tileId) => visibleTileSet.has(tileId))
+  );
+  const visibleHonorTiles = HONOR_TILE_IDS.filter((tileId) => visibleTileSet.has(tileId));
+
+  if (visibleHonorTiles.length > 0) {
+    visibleGroups.push({ label: "字牌", tiles: [...visibleHonorTiles] });
+  }
+
+  return visibleGroups;
+}
 
 function createBlockedTileSet(hand: TileId[], melds: TileId[][]) {
   const counts = new Map<TileId, number>();
@@ -170,6 +185,7 @@ export default function Home() {
   const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
   const explanationAssets = getExplanationAssets(question.shantenTypes);
   const blockedTiles = createBlockedTileSet(question.hand, question.melds);
+  const visibleTileGroups = createVisibleTileGroups(question.hand, question.melds);
   const currentBaseIndex = session?.order[session.position] ?? 0;
   const currentProgress =
     session?.mode === "timeAttack"
@@ -452,7 +468,7 @@ export default function Home() {
           onPointerCancel={handlePointerSelectEnd}
           onPointerLeave={handlePointerSelectEnd}
         >
-          {TILE_GROUPS.map((group) => (
+          {visibleTileGroups.map((group) => (
             <div
               className="choiceRow"
               key={group.label}
