@@ -336,7 +336,7 @@ h2 {
 
 .choiceRows {
   display: grid;
-  gap: 6px;
+  gap: 3px;
   touch-action: none;
   user-select: none;
 }
@@ -345,36 +345,35 @@ h2 {
   display: flex;
   width: 100%;
   flex-wrap: nowrap;
-  gap: 0;
+  gap: 1px;
   align-items: center;
 }
 
 .tileChoice {
   display: flex;
-  width: min(58px, calc(100% / var(--choice-tile-count, 9)));
-  aspect-ratio: 58 / 74;
+  width: min(50px, calc((100% - ((var(--choice-tile-count, 9) - 1) * 1px)) / var(--choice-tile-count, 9)));
+  aspect-ratio: 66 / 90;
   height: auto;
   align-items: center;
   justify-content: center;
-  padding: clamp(1px, 0.45vw, 4px);
-  border: 1px solid transparent;
-  border-radius: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
   color: var(--text);
-  background: var(--surface-strong);
-  box-shadow: 0 8px 20px rgba(31, 41, 51, 0.08);
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
   transition:
     transform 0.15s ease,
-    border-color 0.15s ease,
     background 0.15s ease;
 }
 
 .tileChoice .tileCompact {
-  width: min(42px, calc(100% - 4px));
+  width: 100%;
+  border-radius: 4px;
 }
 
 .tileChoice:hover:not(:disabled) {
-  border-color: var(--accent);
   transform: translateY(-2px);
 }
 
@@ -388,16 +387,25 @@ h2 {
 }
 
 .tileChoice.selected {
-  border-color: var(--accent);
-  background: #e9f7f5;
-  box-shadow:
-    0 0 0 3px rgba(20, 124, 114, 0.18),
-    0 8px 20px rgba(31, 41, 51, 0.08);
+  background: transparent;
+}
+
+.tileChoice.selected .tileCompact {
+  box-shadow: 0 0 0 4px #e22c2c;
 }
 
 .tileChoice.answer {
-  border-color: var(--correct);
-  background: var(--correct-bg);
+  background: transparent;
+}
+
+.tileChoice.answer .tileCompact {
+  box-shadow: 0 0 0 3px var(--correct);
+}
+
+.tileChoice.selected.answer .tileCompact {
+  box-shadow:
+    0 0 0 4px #e22c2c,
+    0 0 0 7px var(--correct);
 }
 
 .tileChoice.blocked:not(.answer) {
@@ -642,20 +650,20 @@ h2 {
   }
 
   .choiceRows {
-    gap: 4px;
+    gap: 2px;
   }
 
   .choiceRow {
-    gap: 0;
+    gap: 1px;
   }
 
   .tileChoice {
-    width: min(50px, calc(100% / var(--choice-tile-count, 9)));
+    width: min(46px, calc((100% - ((var(--choice-tile-count, 9) - 1) * 1px)) / var(--choice-tile-count, 9)));
     height: auto;
-    padding: clamp(1px, 0.5vw, 3px);
+    padding: 0;
   }
 
   .tileChoice .tileCompact {
-    width: min(38px, calc(100% - 3px));
+    width: 100%;
   }
 }
