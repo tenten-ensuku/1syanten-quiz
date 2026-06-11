@@ -350,6 +350,7 @@ h2 {
 }
 
 .tileChoice {
+  position: relative;
   display: flex;
   width: min(50px, calc((100% - ((var(--choice-tile-count, 9) - 1) * 1px)) / var(--choice-tile-count, 9)));
   aspect-ratio: 66 / 90;
@@ -359,6 +360,7 @@ h2 {
   padding: 0;
   border: 0;
   border-radius: 4px;
+  overflow: hidden;
   color: var(--text);
   background: transparent;
   box-shadow: none;
@@ -390,8 +392,14 @@ h2 {
   background: transparent;
 }
 
-.tileChoice.selected .tileCompact {
-  box-shadow: 0 0 0 4px #e22c2c;
+.tileChoice.selected::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 4px;
+  background: rgba(255, 232, 128, 0.42);
+  content: "";
+  pointer-events: none;
 }
 
 .tileChoice.answer {
@@ -403,9 +411,7 @@ h2 {
 }
 
 .tileChoice.selected.answer .tileCompact {
-  box-shadow:
-    0 0 0 4px #e22c2c,
-    0 0 0 7px var(--correct);
+  box-shadow: 0 0 0 3px var(--correct);
 }
 
 .tileChoice.blocked:not(.answer) {
@@ -503,6 +509,18 @@ h2 {
 
 .answerTiles {
   gap: 0;
+}
+
+.explanationHandTiles {
+  display: flex;
+  width: 100%;
+  flex-wrap: nowrap;
+  gap: 0;
+  margin-bottom: 12px;
+}
+
+.explanationHandTiles .tile {
+  width: min(48px, calc(100% / var(--hand-tile-count, 13)));
 }
 
 .explanationImageFrame {

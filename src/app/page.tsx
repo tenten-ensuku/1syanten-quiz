@@ -530,6 +530,15 @@ export default function Home() {
 
           <div className="explanationBlock">
             <h2>解説</h2>
+            <div
+              className="explanationHandTiles"
+              aria-label="問題の牌姿"
+              style={{ "--hand-tile-count": question.hand.length } as CSSProperties}
+            >
+              {question.hand.map((tileId, index) => (
+                <TileView key={`explanation-hand-${question.id}-${tileId}-${index}`} tileId={tileId} />
+              ))}
+            </div>
             {explanationAssets.map((explanationAsset) => (
               <div className="explanationImageFrame" key={explanationAsset.src}>
                 <img
