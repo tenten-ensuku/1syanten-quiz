@@ -11,7 +11,7 @@ import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
 import { APP_VERSION } from "@/lib/appVersion";
-import { QUIZ_QUESTIONS, TileId } from "@/lib/quizData";
+import { QUIZ_QUESTIONS, ShantenType, TileId } from "@/lib/quizData";
 import { createRandomVariant } from "@/lib/quizTransforms";
 
 type QuestionStats = {
@@ -126,26 +126,21 @@ function createExplanationAsset(filename: string, alt: string): ExplanationAsset
   };
 }
 
-function getExplanationAsset(explanation: string): ExplanationAsset | null {
-  const firstSentence = explanation.split("。")[0] ?? explanation;
-
-  if (/ヘッドレス[１1]型/.test(firstSentence)) {
-    return createExplanationAsset("03_headless1.png", "3面子 ヘッドレス1型の解説図");
-  }
-
-  if (/ヘッドレス[２2]型/.test(firstSentence)) {
-    return createExplanationAsset("04_headless2.png", "3面子 ヘッドレス2型の解説図");
-  }
-
-  if (firstSentence.includes("完全形")) {
-    return createExplanationAsset("02_complete.png", "2面子 完全形の解説図");
-  }
-
-  if (/余剰牌[型形]/.test(firstSentence)) {
-    return createExplanationAsset("01_extra_tile.png", "2面子 余剰牌型の解説図");
-  }
-
-  return null;
+function getExplanationAssets(shantenTypes: ShantenType[]): ExplanationAsset[] {
+  return shantenTypes.flatMap((shantenType) => {
+    switch (shantenType) {
+      case "余剰牌型":
+        return [createExplanationAsset("01_extra_tile.png", "2面子 余剰牌型の解説図")];
+      case "完全形":
+        return [createExplanationAsset("02_complete.png", "2面子 完全形の解説図")];
+      case "ヘッドレス1型":
+        return [createExplanationAsset("03_headless1.png", "3面子 ヘッドレス1型の解説図")];
+      case "ヘッドレス2型":
+        return [createExplanationAsset("04_headless2.png", "3面子 ヘッドレス2型の解説図")];
+      case "くっつき":
+        return [];
+    }
+  });
 }
 
 export default function Home() {
@@ -173,7 +168,7 @@ export default function Home() {
   }, [hasLoadedStats, stats]);
 
   const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
-  const explanationAsset = getExplanationAsset(question.explanation);
+  const explanationAssets = getExplanationAssets(question.shantenTypes);
   const blockedTiles = createBlockedTileSet(question.hand, question.melds);
   const currentBaseIndex = session?.order[session.position] ?? 0;
   const currentProgress =
@@ -519,15 +514,15 @@ export default function Home() {
 
           <div className="explanationBlock">
             <h2>解説</h2>
-            {explanationAsset && (
-              <div className="explanationImageFrame">
+            {explanationAssets.map((explanationAsset) => (
+              <div className="explanationImageFrame" key={explanationAsset.src}>
                 <img
                   className="explanationImage"
                   src={explanationAsset.src}
                   alt={explanationAsset.alt}
                 />
               </div>
-            )}
+            ))}
             <p>{question.explanation}</p>
           </div>
 
