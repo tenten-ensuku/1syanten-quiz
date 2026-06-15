@@ -682,9 +682,24 @@ h2 {
   height: auto;
 }
 
-.explanationBlock p {
+.explanationBlock p,
+.explanationText {
   margin-bottom: 0;
   line-height: 1.8;
+}
+
+.inlineTileGroup {
+  display: inline-flex;
+  gap: 0;
+  align-items: center;
+  margin: 0 0.08em;
+  vertical-align: -0.2em;
+  white-space: nowrap;
+}
+
+.inlineTileGroup .tileCompact {
+  width: 0.82em;
+  border-radius: 2px;
 }
 
 .nextButton {

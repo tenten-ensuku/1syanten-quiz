@@ -43,6 +43,9 @@ type ExplanationAsset = {
   src: string;
   alt: string;
 };
+type ExplanationSegment =
+  | { type: "text"; value: string }
+  | { type: "tiles"; value: TileId[] };
 
 function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   if (selectedTiles.length !== answers.length) {
@@ -165,6 +168,50 @@ function getExplanationAssets(shantenTypes: ShantenType[]): ExplanationAsset[] {
         return [];
     }
   });
+}
+
+function parseExplanationSegments(explanation: string): ExplanationSegment[] {
+  const segments: ExplanationSegment[] = [];
+  const tileNotationPattern = /([1-9]+)([mps])/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = tileNotationPattern.exec(explanation)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: "text", value: explanation.slice(lastIndex, match.index) });
+    }
+
+    const [, digits, suit] = match;
+    segments.push({
+      type: "tiles",
+      value: [...digits].map((digit) => `${digit}${suit}` as TileId)
+    });
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < explanation.length) {
+    segments.push({ type: "text", value: explanation.slice(lastIndex) });
+  }
+
+  return segments;
+}
+
+function ExplanationText({ explanation }: { explanation: string }) {
+  return (
+    <p className="explanationText">
+      {parseExplanationSegments(explanation).map((segment, index) =>
+        segment.type === "text" ? (
+          <span key={`text-${index}`}>{segment.value}</span>
+        ) : (
+          <span className="inlineTileGroup" key={`tiles-${index}`}>
+            {segment.value.map((tileId, tileIndex) => (
+              <TileView key={`${tileId}-${tileIndex}`} tileId={tileId} compact />
+            ))}
+          </span>
+        )
+      )}
+    </p>
+  );
 }
 
 export default function Home() {
@@ -662,7 +709,7 @@ export default function Home() {
                 />
               </div>
             ))}
-            <p>{question.explanation}</p>
+            <ExplanationText explanation={question.explanation} />
           </div>
 
           <button className="nextButton" type="button" onClick={handleNext}>

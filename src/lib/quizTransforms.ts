@@ -36,6 +36,25 @@ const REVERSED_NUMBER_MAP: Record<string, string> = {
 const TILE_SORT_ORDER = new Map<TileId, number>(
   ALL_TILE_IDS.map((tileId, index) => [tileId, index])
 );
+const FULL_WIDTH_DIGIT_MAP: Record<string, string> = {
+  "１": "1",
+  "２": "2",
+  "３": "3",
+  "４": "4",
+  "５": "5",
+  "６": "6",
+  "７": "7",
+  "８": "8",
+  "９": "9"
+};
+const FULL_WIDTH_SUIT_MAP: Record<string, Suit> = {
+  m: "m",
+  p: "p",
+  s: "s",
+  "ｍ": "m",
+  "ｐ": "p",
+  "ｓ": "s"
+};
 
 export function compareTileIds(left: TileId, right: TileId) {
   return (TILE_SORT_ORDER.get(left) ?? 0) - (TILE_SORT_ORDER.get(right) ?? 0);
@@ -43,6 +62,23 @@ export function compareTileIds(left: TileId, right: TileId) {
 
 export function sortTilesByDisplayOrder(tileIds: TileId[]) {
   return [...tileIds].sort(compareTileIds);
+}
+
+function createSuitedTileNotation(tileIds: TileId[]) {
+  const suitedTiles = tileIds
+    .map((tileId) => tileId.match(/^([1-9])([mps])$/))
+    .filter((match): match is RegExpMatchArray => Boolean(match));
+
+  if (suitedTiles.length === 0) {
+    return "";
+  }
+
+  const suit = suitedTiles[0][2];
+  return `${suitedTiles.map((match) => match[1]).join("")}${suit}`;
+}
+
+function normalizeDigits(digits: string) {
+  return [...digits].map((digit) => FULL_WIDTH_DIGIT_MAP[digit] ?? digit).join("");
 }
 
 function isTileId(value: string): value is TileId {
@@ -76,6 +112,23 @@ export function transformTile(
   return transformedTile;
 }
 
+function transformExplanation(
+  explanation: string,
+  suitMap: SuitMap,
+  shouldReverseNumbers: boolean
+) {
+  return explanation.replace(/([1-9１-９]+)([mpsｍｐｓ])/g, (_match, rawDigits: string, rawSuit: string) => {
+    const suit = FULL_WIDTH_SUIT_MAP[rawSuit];
+    const transformedTiles = sortTilesByDisplayOrder(
+      [...normalizeDigits(rawDigits)].map((digit) =>
+        transformTile(`${digit}${suit}` as TileId, suitMap, shouldReverseNumbers)
+      )
+    );
+
+    return createSuitedTileNotation(transformedTiles);
+  });
+}
+
 export function transformQuestion(
   question: QuizQuestion,
   suitMap: SuitMap,
@@ -100,6 +153,7 @@ export function transformQuestion(
     hand,
     melds,
     answers,
+    explanation: transformExplanation(question.explanation, suitMap, shouldReverseNumbers),
     variantInfo: {
       suitMap,
       shouldReverseNumbers
