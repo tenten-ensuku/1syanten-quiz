@@ -392,7 +392,19 @@ export default function Home() {
               onClick={() => startSingleQuestion(index)}
             >
               <span className="problemId">{baseQuestion.id}</span>
-              <span className="problemSource">{baseQuestion.source}</span>
+              <span
+                className="problemTiles"
+                aria-label={baseQuestion.source}
+                style={{ "--problem-tile-count": baseQuestion.hand.length } as CSSProperties}
+              >
+                {baseQuestion.hand.map((tileId, tileIndex) => (
+                  <TileView
+                    key={`${baseQuestion.id}-${tileId}-${tileIndex}`}
+                    tileId={tileId}
+                    compact
+                  />
+                ))}
+              </span>
               <span className="statPill">正答率 {formatRate(stat)}</span>
               <span className="statPill">平均 {formatAverageCorrectTime(stat)}</span>
             </button>

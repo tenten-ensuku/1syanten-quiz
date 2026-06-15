@@ -273,11 +273,11 @@ h2 {
 
 .questionListItem {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 112px 128px;
-  gap: 10px;
+  grid-template-columns: 58px minmax(0, 1fr) 104px 118px;
+  gap: 8px;
   align-items: center;
   width: 100%;
-  padding: 11px 12px;
+  padding: 8px 10px;
   border: 0;
   border-bottom: 1px solid var(--line);
   color: var(--text);
@@ -299,13 +299,17 @@ h2 {
   font-weight: 900;
 }
 
-.problemSource {
+.problemTiles {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0;
   overflow: hidden;
-  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-  font-size: 0.9rem;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.problemTiles .tileCompact {
+  width: min(30px, calc(100% / var(--problem-tile-count, 13)));
+  border-radius: 3px;
 }
 
 .statPill {
@@ -758,12 +762,21 @@ h2 {
   }
 
   .questionListItem {
-    grid-template-columns: 54px minmax(0, 1fr);
+    grid-template-columns: 48px minmax(0, 1fr);
     gap: 4px 8px;
+    padding: 8px;
   }
 
-  .problemSource {
-    font-size: 0.82rem;
+  .problemTiles {
+    grid-column: 2 / -1;
+  }
+
+  .problemTiles .tileCompact {
+    width: min(26px, calc(100% / var(--problem-tile-count, 13)));
+  }
+
+  .problemId {
+    align-self: center;
   }
 
   .statPill {
