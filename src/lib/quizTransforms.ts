@@ -81,6 +81,23 @@ function normalizeDigits(digits: string) {
   return [...digits].map((digit) => FULL_WIDTH_DIGIT_MAP[digit] ?? digit).join("");
 }
 
+function normalizeSinglePlusRangeExpression(explanation: string) {
+  return explanation.replace(
+    /([1-9])([mps])\+([1-9])\2～([1-9])\2/g,
+    (_match, rawSingle: string, suit: Suit, rawRangeStart: string, rawRangeEnd: string) => {
+      const single = Number(rawSingle);
+      const rangeStart = Number(rawRangeStart);
+      const rangeEnd = Number(rawRangeEnd);
+      const low = Math.min(rangeStart, rangeEnd);
+      const high = Math.max(rangeStart, rangeEnd);
+      const range = `${low}${suit}～${high}${suit}`;
+      const singleTile = `${single}${suit}`;
+
+      return single < low ? `${singleTile}+${range}` : `${range}+${singleTile}`;
+    }
+  );
+}
+
 function isTileId(value: string): value is TileId {
   return ALL_TILE_IDS.includes(value as TileId);
 }
@@ -117,7 +134,7 @@ function transformExplanation(
   suitMap: SuitMap,
   shouldReverseNumbers: boolean
 ) {
-  return explanation.replace(/([1-9１-９]+)([mpsｍｐｓ])/g, (_match, rawDigits: string, rawSuit: string) => {
+  const transformed = explanation.replace(/([1-9１-９]+)([mpsｍｐｓ])/g, (_match, rawDigits: string, rawSuit: string) => {
     const suit = FULL_WIDTH_SUIT_MAP[rawSuit];
     const transformedTiles = sortTilesByDisplayOrder(
       [...normalizeDigits(rawDigits)].map((digit) =>
@@ -127,6 +144,8 @@ function transformExplanation(
 
     return createSuitedTileNotation(transformedTiles);
   });
+
+  return normalizeSinglePlusRangeExpression(transformed);
 }
 
 export function transformQuestion(
