@@ -98,6 +98,23 @@ function normalizeSinglePlusRangeExpression(explanation: string) {
   );
 }
 
+function normalizeReversedDecompositionExpression(explanation: string) {
+  return explanation.replace(
+    /([1-9]+)([mps])\+([1-9]+)\2\+([1-9]+)\2/g,
+    (_match, firstDigits: string, suit: Suit, secondDigits: string, thirdDigits: string) => {
+      const parts = [firstDigits, secondDigits, thirdDigits].sort((left, right) => {
+        if (right.length !== left.length) {
+          return right.length - left.length;
+        }
+
+        return Number(left) - Number(right);
+      });
+
+      return parts.map((digits) => `${digits}${suit}`).join("+");
+    }
+  );
+}
+
 function isTileId(value: string): value is TileId {
   return ALL_TILE_IDS.includes(value as TileId);
 }
@@ -145,7 +162,11 @@ function transformExplanation(
     return createSuitedTileNotation(transformedTiles);
   });
 
-  return normalizeSinglePlusRangeExpression(transformed);
+  const normalizedExpression = shouldReverseNumbers
+    ? normalizeReversedDecompositionExpression(transformed)
+    : transformed;
+
+  return normalizeSinglePlusRangeExpression(normalizedExpression);
 }
 
 export function transformQuestion(
