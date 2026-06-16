@@ -35,6 +35,7 @@ type PlaySession = {
 type ViewMode = "menu" | "quiz" | "timeAttackComplete";
 type MenuTab = "challenge" | "questions" | "analysis" | "ranking";
 type TileChoiceGroup = { label: string; tiles: TileId[] };
+type TypeFilterOption = { type: ShantenType; label: string };
 
 const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -56,15 +57,22 @@ function isSameTileSet(selectedTiles: TileId[], answers: TileId[]) {
   return answers.every((tileId) => selectedSet.has(tileId));
 }
 
-function createShuffledQuestionIndexes(limit = QUIZ_QUESTIONS.length) {
-  const indexes = QUIZ_QUESTIONS.map((_, index) => index);
+function createShuffledIndexes(indexes: number[], limit = indexes.length) {
+  const shuffledIndexes = [...indexes];
 
-  for (let index = indexes.length - 1; index > 0; index -= 1) {
+  for (let index = shuffledIndexes.length - 1; index > 0; index -= 1) {
     const randomIndex = Math.floor(Math.random() * (index + 1));
-    [indexes[index], indexes[randomIndex]] = [indexes[randomIndex], indexes[index]];
+    [shuffledIndexes[index], shuffledIndexes[randomIndex]] = [
+      shuffledIndexes[randomIndex],
+      shuffledIndexes[index]
+    ];
   }
 
-  return indexes.slice(0, limit);
+  return shuffledIndexes.slice(0, limit);
+}
+
+function createShuffledQuestionIndexes(limit = QUIZ_QUESTIONS.length) {
+  return createShuffledIndexes(QUIZ_QUESTIONS.map((_, index) => index), limit);
 }
 
 const TILE_GROUPS: TileChoiceGroup[] = [
@@ -79,6 +87,14 @@ const MENU_TABS: { id: MenuTab; label: string }[] = [
   { id: "questions", label: "問題一覧" },
   { id: "analysis", label: "自己分析" },
   { id: "ranking", label: "順位" }
+];
+
+const TYPE_FILTER_OPTIONS: TypeFilterOption[] = [
+  { type: "余剰牌型", label: "【2面子型】余剰牌型" },
+  { type: "完全形", label: "【2面子型】完全形" },
+  { type: "ヘッドレス1型", label: "【3面子型】ヘッドレス1型" },
+  { type: "ヘッドレス2型", label: "【3面子型】ヘッドレス2型" },
+  { type: "くっつき", label: "【3面子型】くっつき" }
 ];
 
 function createVisibleTileGroups(hand: TileId[], melds: TileId[][]): TileChoiceGroup[] {
@@ -225,6 +241,7 @@ export default function Home() {
   const [stats, setStats] = useState<StatsByQuestion>({});
   const [hasLoadedStats, setHasLoadedStats] = useState(false);
   const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
+  const [selectedTypeFilters, setSelectedTypeFilters] = useState<ShantenType[]>([]);
   const isPointerSelectingRef = useRef(false);
   const pointerSelectedTilesRef = useRef(new Set<TileId>());
 
@@ -255,6 +272,10 @@ export default function Home() {
   const attemptedQuestionCount = statValues.filter((stat) => stat.attempts > 0).length;
   const overallRate = totalAttempts > 0 ? `${Math.round((totalCorrect / totalAttempts) * 100)}%` : "未挑戦";
   const overallAverage = totalCorrect > 0 ? formatTime(totalCorrectMs / totalCorrect) : "未記録";
+  const typeFilteredQuestionIndexes = QUIZ_QUESTIONS.map((baseQuestion, index) =>
+    selectedTypeFilters.some((type) => baseQuestion.shantenTypes.includes(type)) ? index : -1
+  ).filter((index) => index >= 0);
+  const typeFilteredQuestionCount = typeFilteredQuestionIndexes.length;
 
   const loadQuestion = (baseIndex: number) => {
     setQuestion(createRandomVariant(QUIZ_QUESTIONS[baseIndex]));
@@ -298,6 +319,22 @@ export default function Home() {
 
   const startAllQuestions = () => {
     startQuestionSet(QUIZ_QUESTIONS.map((_, index) => index), "全問");
+  };
+
+  const toggleTypeFilter = (type: ShantenType) => {
+    setSelectedTypeFilters((current) =>
+      current.includes(type)
+        ? current.filter((selectedType) => selectedType !== type)
+        : [...current, type]
+    );
+  };
+
+  const startTypeFilteredQuestions = () => {
+    if (typeFilteredQuestionCount === 0) {
+      return;
+    }
+
+    startQuestionSet(createShuffledIndexes(typeFilteredQuestionIndexes), "タイプ別出題");
   };
 
   const returnToMenu = () => {
@@ -530,6 +567,38 @@ export default function Home() {
           <button className="challengeCard" type="button" onClick={startAllQuestions}>
             <span className="challengeLabel">全問</span>
             <span className="challengeMeta">56種を通しで挑戦</span>
+          </button>
+        </div>
+        <div className="typeChallengePanel">
+          <div className="sectionTitleRow">
+            <h3>タイプ別出題</h3>
+            <span className="questionCount">
+              {selectedTypeFilters.length > 0 ? `${typeFilteredQuestionCount}問` : "未選択"}
+            </span>
+          </div>
+          <div className="typeFilterGrid" aria-label="出題タイプを選択">
+            {TYPE_FILTER_OPTIONS.map((option) => {
+              const isSelected = selectedTypeFilters.includes(option.type);
+              return (
+                <button
+                  className={isSelected ? "typeFilterButton active" : "typeFilterButton"}
+                  key={option.type}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => toggleTypeFilter(option.type)}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            className="typeStartButton"
+            type="button"
+            onClick={startTypeFilteredQuestions}
+            disabled={typeFilteredQuestionCount === 0}
+          >
+            選択タイプで出題
           </button>
         </div>
       </section>
