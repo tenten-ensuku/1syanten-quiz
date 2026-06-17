@@ -46,7 +46,7 @@ type PlaySession = {
 type ViewMode = "menu" | "quiz" | "timeAttackComplete";
 type MenuTab = "challenge" | "questions" | "analysis" | "ranking";
 type TileChoiceGroup = { label: string; tiles: TileId[] };
-type TypeFilterOption = { type: ShantenType; label: string };
+type TypeFilterOption = { id: string; types: ShantenType[]; label: string };
 
 const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -101,11 +101,10 @@ const MENU_TABS: { id: MenuTab; label: string }[] = [
 ];
 
 const TYPE_FILTER_OPTIONS: TypeFilterOption[] = [
-  { type: "余剰牌型", label: "【2面子型】余剰牌型" },
-  { type: "完全形", label: "【2面子型】完全形" },
-  { type: "ヘッドレス1型", label: "【3面子型】ヘッドレス1型" },
-  { type: "ヘッドレス2型", label: "【3面子型】ヘッドレス2型" },
-  { type: "くっつき", label: "【3面子型】くっつき" }
+  { id: "two-meld", types: ["余剰牌型", "完全形"], label: "【2面子型】余剰牌型・完全形" },
+  { id: "headless-1", types: ["ヘッドレス1型"], label: "【3面子型】ヘッドレス1型" },
+  { id: "headless-2", types: ["ヘッドレス2型"], label: "【3面子型】ヘッドレス2型" },
+  { id: "floating", types: ["くっつき"], label: "【3面子型】くっつき" }
 ];
 
 function createVisibleTileGroups(hand: TileId[], melds: TileId[][]): TileChoiceGroup[] {
@@ -354,7 +353,7 @@ export default function Home() {
   const [stats, setStats] = useState<StatsByQuestion>({});
   const [hasLoadedStats, setHasLoadedStats] = useState(false);
   const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
-  const [selectedTypeFilters, setSelectedTypeFilters] = useState<ShantenType[]>([]);
+  const [selectedTypeFilterIds, setSelectedTypeFilterIds] = useState<string[]>([]);
   const isPointerSelectingRef = useRef(false);
   const pointerSelectedTilesRef = useRef(new Set<TileId>());
 
@@ -385,8 +384,13 @@ export default function Home() {
   const attemptedQuestionCount = statValues.filter((stat) => stat.attempts > 0).length;
   const overallRate = totalAttempts > 0 ? `${Math.round((totalCorrect / totalAttempts) * 100)}%` : "未挑戦";
   const overallAverage = totalCorrect > 0 ? formatTime(totalCorrectMs / totalCorrect) : "未記録";
+  const selectedTypeSet = new Set(
+    TYPE_FILTER_OPTIONS.filter((option) => selectedTypeFilterIds.includes(option.id)).flatMap(
+      (option) => option.types
+    )
+  );
   const typeFilteredQuestionIndexes = QUIZ_QUESTIONS.map((baseQuestion, index) =>
-    selectedTypeFilters.some((type) => baseQuestion.shantenTypes.includes(type)) ? index : -1
+    baseQuestion.shantenTypes.some((type) => selectedTypeSet.has(type)) ? index : -1
   ).filter((index) => index >= 0);
   const typeFilteredQuestionCount = typeFilteredQuestionIndexes.length;
 
@@ -436,11 +440,11 @@ export default function Home() {
     startQuestionSet(QUIZ_QUESTIONS.map((_, index) => index), "全問");
   };
 
-  const toggleTypeFilter = (type: ShantenType) => {
-    setSelectedTypeFilters((current) =>
-      current.includes(type)
-        ? current.filter((selectedType) => selectedType !== type)
-        : [...current, type]
+  const toggleTypeFilter = (filterId: string) => {
+    setSelectedTypeFilterIds((current) =>
+      current.includes(filterId)
+        ? current.filter((selectedFilterId) => selectedFilterId !== filterId)
+        : [...current, filterId]
     );
   };
 
@@ -709,19 +713,19 @@ export default function Home() {
           <div className="sectionTitleRow">
             <h3>タイプ別出題</h3>
             <span className="questionCount">
-              {selectedTypeFilters.length > 0 ? `${typeFilteredQuestionCount}問` : "未選択"}
+              {selectedTypeFilterIds.length > 0 ? `${typeFilteredQuestionCount}問` : "未選択"}
             </span>
           </div>
           <div className="typeFilterGrid" aria-label="出題タイプを選択">
             {TYPE_FILTER_OPTIONS.map((option) => {
-              const isSelected = selectedTypeFilters.includes(option.type);
+              const isSelected = selectedTypeFilterIds.includes(option.id);
               return (
                 <button
                   className={isSelected ? "typeFilterButton active" : "typeFilterButton"}
-                  key={option.type}
+                  key={option.id}
                   type="button"
                   aria-pressed={isSelected}
-                  onClick={() => toggleTypeFilter(option.type)}
+                  onClick={() => toggleTypeFilter(option.id)}
                 >
                   {option.label}
                 </button>
