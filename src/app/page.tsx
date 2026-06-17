@@ -381,7 +381,6 @@ export default function Home() {
   const totalAttempts = statValues.reduce((sum, stat) => sum + stat.attempts, 0);
   const totalCorrect = statValues.reduce((sum, stat) => sum + stat.correct, 0);
   const totalCorrectMs = statValues.reduce((sum, stat) => sum + stat.totalCorrectMs, 0);
-  const attemptedQuestionCount = statValues.filter((stat) => stat.attempts > 0).length;
   const overallRate = totalAttempts > 0 ? `${Math.round((totalCorrect / totalAttempts) * 100)}%` : "未挑戦";
   const overallAverage = totalCorrect > 0 ? formatTime(totalCorrectMs / totalCorrect) : "未記録";
   const selectedTypeSet = new Set(
@@ -648,13 +647,8 @@ export default function Home() {
         <section className="menuSection" aria-labelledby="analysis-title">
           <div className="sectionTitleRow">
             <h2 id="analysis-title">自己分析</h2>
-            <span className="questionCount">{attemptedQuestionCount} / 56</span>
           </div>
           <div className="analysisGrid">
-            <div className="analysisCard">
-              <span>挑戦済み</span>
-              <strong>{attemptedQuestionCount}問</strong>
-            </div>
             <div className="analysisCard">
               <span>総回答</span>
               <strong>{totalAttempts}回</strong>

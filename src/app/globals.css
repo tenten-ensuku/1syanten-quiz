@@ -280,8 +280,11 @@ h2 {
 .analysisGrid,
 .rankingPanel {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+}
+
+.analysisGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .analysisCard,
