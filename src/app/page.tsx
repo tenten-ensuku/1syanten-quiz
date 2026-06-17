@@ -46,7 +46,12 @@ type PlaySession = {
 type ViewMode = "menu" | "quiz" | "timeAttackComplete";
 type MenuTab = "challenge" | "questions" | "analysis" | "ranking";
 type TileChoiceGroup = { label: string; tiles: TileId[] };
-type TypeFilterOption = { id: string; types: ShantenType[]; label: string };
+type TypeFilterOption = {
+  id: string;
+  types: ShantenType[];
+  groupLabel: string;
+  mainLabel: string;
+};
 
 const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -101,10 +106,30 @@ const MENU_TABS: { id: MenuTab; label: string }[] = [
 ];
 
 const TYPE_FILTER_OPTIONS: TypeFilterOption[] = [
-  { id: "two-meld", types: ["余剰牌型", "完全形"], label: "【2面子型】余剰牌型・完全形" },
-  { id: "headless-1", types: ["ヘッドレス1型"], label: "【3面子型】ヘッドレス1型" },
-  { id: "headless-2", types: ["ヘッドレス2型"], label: "【3面子型】ヘッドレス2型" },
-  { id: "floating", types: ["くっつき"], label: "【3面子型】くっつき" }
+  {
+    id: "two-meld",
+    types: ["余剰牌型", "完全形"],
+    groupLabel: "2面子型",
+    mainLabel: "余剰牌型・完全形"
+  },
+  {
+    id: "headless-1",
+    types: ["ヘッドレス1型"],
+    groupLabel: "3面子型",
+    mainLabel: "ヘッドレス1型"
+  },
+  {
+    id: "headless-2",
+    types: ["ヘッドレス2型"],
+    groupLabel: "3面子型",
+    mainLabel: "ヘッドレス2型"
+  },
+  {
+    id: "floating",
+    types: ["くっつき"],
+    groupLabel: "3面子型",
+    mainLabel: "くっつき"
+  }
 ];
 
 function createVisibleTileGroups(hand: TileId[], melds: TileId[][]): TileChoiceGroup[] {
@@ -721,7 +746,8 @@ export default function Home() {
                   aria-pressed={isSelected}
                   onClick={() => toggleTypeFilter(option.id)}
                 >
-                  {option.label}
+                  <span className="typeFilterGroup">{option.groupLabel}</span>
+                  <span className="typeFilterMain">{option.mainLabel}</span>
                 </button>
               );
             })}

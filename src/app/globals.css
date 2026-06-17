@@ -232,20 +232,21 @@ h2 {
 
 .typeFilterGrid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
 .typeFilterButton {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
   min-height: 50px;
   padding: 8px 10px;
   border: 1px solid rgba(17, 24, 39, 0.14);
   border-radius: 8px;
   color: var(--text);
   background: rgba(255, 255, 255, 0.68);
-  font-size: 0.86rem;
-  font-weight: 900;
-  line-height: 1.25;
   cursor: pointer;
 }
 
@@ -254,6 +255,29 @@ h2 {
   color: #1f1404;
   background: linear-gradient(180deg, #ffe29a, #dca03d);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.typeFilterGroup {
+  color: #1268c8;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.typeFilterMain {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.typeFilterButton.active .typeFilterGroup {
+  color: #0750a5;
+}
+
+.typeFilterButton.active .typeFilterMain {
+  color: #1f1404;
 }
 
 .typeStartButton {
