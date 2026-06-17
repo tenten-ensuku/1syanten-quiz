@@ -797,6 +797,320 @@ h2 {
   font-weight: 900;
 }
 
+.recordPanel {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(122, 74, 22, 0.28);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(240, 207, 118, 0.24), transparent 22rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 247, 250, 0.92));
+}
+
+.recordPanel::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 38%,
+    rgba(255, 255, 255, 0.66) 48%,
+    transparent 58%,
+    transparent 100%
+  );
+  content: "";
+  pointer-events: none;
+  transform: translateX(-120%);
+  animation: resultSheen 1.45s ease-out 0.25s both;
+}
+
+.recordPanel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.resultHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.resultHeader h2 {
+  margin-bottom: 0;
+  font-size: clamp(1.7rem, 6vw, 2.75rem);
+  line-height: 1;
+}
+
+.resultModePill {
+  padding: 7px 11px;
+  border: 1px solid rgba(122, 74, 22, 0.25);
+  border-radius: 999px;
+  color: #4b300d;
+  background: rgba(255, 246, 214, 0.86);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.scoreCard {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 22px;
+  border-radius: 8px;
+  color: #f9f3df;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(240, 207, 118, 0.28), transparent 18rem),
+    linear-gradient(180deg, #202632, #111827);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    0 18px 34px rgba(17, 24, 39, 0.18);
+}
+
+.scoreGauge {
+  --score-progress: 0deg;
+  position: relative;
+  display: grid;
+  width: min(230px, 70vw);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 999px;
+  background: conic-gradient(
+    #f2d577 var(--score-progress),
+    rgba(255, 255, 255, 0.13) 0deg
+  );
+  animation: scorePop 0.55s cubic-bezier(0.2, 1.35, 0.38, 1) both;
+}
+
+.scoreGauge::before {
+  position: absolute;
+  inset: 11px;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.18), transparent 58%),
+    linear-gradient(180deg, #2d3542, #141923);
+  content: "";
+}
+
+.scoreGaugeCenter {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.scoreGaugeCenter strong {
+  color: #ffffff;
+  font-size: clamp(1.65rem, 6vw, 2.35rem);
+  line-height: 1;
+}
+
+.scoreGaugeCenter small {
+  margin-left: 4px;
+  color: var(--gold-2);
+  font-size: 0.52em;
+}
+
+.rankBadgeResult {
+  font-size: clamp(3.4rem, 15vw, 6.2rem);
+  font-weight: 1000;
+  line-height: 0.92;
+  letter-spacing: 0;
+  text-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  animation: rankReveal 0.72s ease-out 0.18s both;
+}
+
+.rankGod,
+.rankSS {
+  color: transparent;
+  background: linear-gradient(180deg, #fff7bd, #f1c24c 44%, #ffffff 48%, #d98a22);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.rankS {
+  color: #f2d577;
+}
+
+.rankA {
+  color: #9fe7c0;
+}
+
+.rankB {
+  color: #a7d7ff;
+}
+
+.rankC {
+  color: #d5e3ef;
+}
+
+.rankD,
+.rankE {
+  color: #cbd5e1;
+}
+
+.rankComment {
+  margin-bottom: 0;
+  color: #f8f4e8;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.resultStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.resultStatCard {
+  display: grid;
+  gap: 8px;
+  min-height: 88px;
+  align-content: center;
+  padding: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.resultStatCard span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.resultStatCard strong {
+  color: var(--text);
+  font-size: clamp(1.05rem, 3vw, 1.45rem);
+  line-height: 1;
+}
+
+.wrongQuestionBlock {
+  display: grid;
+  gap: 10px;
+}
+
+.wrongQuestionBlock h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.wrongQuestionList {
+  display: grid;
+  gap: 10px;
+}
+
+.wrongQuestionItem {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.wrongQuestionTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wrongQuestionTiles,
+.wrongMeld,
+.wrongAnswerTiles {
+  display: flex;
+  min-width: 0;
+  flex-wrap: nowrap;
+  gap: 0;
+  align-items: center;
+}
+
+.wrongQuestionTiles {
+  width: 100%;
+  overflow: hidden;
+}
+
+.wrongQuestionTiles .tileCompact {
+  width: min(32px, calc(100% / var(--wrong-tile-count, 13)));
+  border-radius: 3px;
+}
+
+.wrongMeld {
+  margin-left: 3px;
+  padding-left: 3px;
+  border-left: 1px solid var(--line);
+}
+
+.wrongAnswerRows {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.wrongAnswerTiles {
+  color: var(--text);
+  overflow: hidden;
+}
+
+.wrongAnswerTiles .tileCompact {
+  width: 30px;
+  border-radius: 3px;
+}
+
+.perfectRunText {
+  margin-bottom: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(23, 114, 69, 0.16);
+  border-radius: 8px;
+  color: var(--correct);
+  background: var(--correct-bg);
+  font-weight: 900;
+}
+
+.completionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@keyframes resultSheen {
+  from {
+    transform: translateX(-120%);
+  }
+
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes scorePop {
+  from {
+    opacity: 0;
+    transform: scale(0.72) rotate(-8deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes rankReveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.86);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 640px) {
   .appShell {
     width: min(100% - 20px, 1080px);
@@ -933,5 +1247,30 @@ h2 {
 
   .tileChoice .tileCompact {
     width: 100%;
+  }
+
+  .resultHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .scoreCard {
+    padding: 18px 12px;
+  }
+
+  .scoreGauge {
+    width: min(210px, 78vw);
+  }
+
+  .resultStatsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .resultStatCard {
+    min-height: 78px;
+  }
+
+  .wrongAnswerRows {
+    grid-template-columns: 38px minmax(0, 1fr);
   }
 }

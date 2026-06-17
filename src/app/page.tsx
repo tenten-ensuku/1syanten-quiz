@@ -22,6 +22,16 @@ type QuestionStats = {
 
 type StatsByQuestion = Record<string, QuestionStats>;
 
+type ResultRank = "神" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
+
+type SessionWrongQuestion = {
+  questionId: string;
+  hand: TileId[];
+  melds: TileId[][];
+  answers: TileId[];
+  selectedTiles: TileId[];
+};
+
 type PlaySession = {
   mode: "single" | "timeAttack";
   label?: string;
@@ -30,6 +40,7 @@ type PlaySession = {
   totalMs: number;
   correctCount: number;
   answeredCount: number;
+  wrongQuestions: SessionWrongQuestion[];
 };
 
 type ViewMode = "menu" | "quiz" | "timeAttackComplete";
@@ -160,6 +171,108 @@ function formatAverageCorrectTime(stat: QuestionStats) {
   }
 
   return formatTime(stat.totalCorrectMs / stat.correct);
+}
+
+function formatRatePercent(correctCount: number, questionCount: number) {
+  if (questionCount === 0) {
+    return "0%";
+  }
+
+  return `${Math.round((correctCount / questionCount) * 100)}%`;
+}
+
+function calculateScore(
+  questionCount: number,
+  correctCount: number,
+  mistakeCount: number,
+  totalMs: number
+) {
+  const elapsedWholeSeconds = Math.floor(totalMs / 1000);
+  const timeBonus = Math.max(0, questionCount * 20 - elapsedWholeSeconds);
+
+  return Math.max(0, correctCount * 10 - mistakeCount * 20 + timeBonus);
+}
+
+function rankForResult(questionCount: number, correctCount: number, totalMs: number): ResultRank {
+  if (questionCount === 0) {
+    return "E";
+  }
+
+  const averageSeconds = totalMs / questionCount / 1000;
+  const correctRate = correctCount / questionCount;
+  const isPerfect = correctCount === questionCount;
+
+  if (isPerfect && averageSeconds <= 6) {
+    return "神";
+  }
+
+  if (isPerfect && averageSeconds <= 10) {
+    return "SS";
+  }
+
+  if (isPerfect && averageSeconds <= 15) {
+    return "S";
+  }
+
+  if (correctRate >= 0.95 && averageSeconds <= 20) {
+    return "A";
+  }
+
+  if (correctRate >= 0.9 && averageSeconds <= 25) {
+    return "B";
+  }
+
+  if (correctRate >= 0.8) {
+    return "C";
+  }
+
+  if (correctRate >= 0.6) {
+    return "D";
+  }
+
+  return "E";
+}
+
+function rankClassName(rank: ResultRank) {
+  switch (rank) {
+    case "神":
+      return "rankGod";
+    case "SS":
+      return "rankSS";
+    case "S":
+      return "rankS";
+    case "A":
+      return "rankA";
+    case "B":
+      return "rankB";
+    case "C":
+      return "rankC";
+    case "D":
+      return "rankD";
+    case "E":
+      return "rankE";
+  }
+}
+
+function rankComment(rank: ResultRank) {
+  switch (rank) {
+    case "神":
+      return "てんてん級。速すぎる。";
+    case "SS":
+      return "全問正解、文句なし。";
+    case "S":
+      return "安定して強い。";
+    case "A":
+      return "かなり実戦的。";
+    case "B":
+      return "基礎は見えている。";
+    case "C":
+      return "復習すると伸びる。";
+    case "D":
+      return "まずは型を見分けよう。";
+    case "E":
+      return "ここから育てよう。";
+  }
 }
 
 function createExplanationAsset(filename: string, alt: string): ExplanationAsset {
@@ -293,7 +406,8 @@ export default function Home() {
       position: 0,
       totalMs: 0,
       correctCount: 0,
-      answeredCount: 0
+      answeredCount: 0,
+      wrongQuestions: []
     });
     loadQuestion(baseIndex);
     setViewMode("quiz");
@@ -307,7 +421,8 @@ export default function Home() {
       position: 0,
       totalMs: 0,
       correctCount: 0,
-      answeredCount: 0
+      answeredCount: 0,
+      wrongQuestions: []
     });
     loadQuestion(order[0] ?? 0);
     setViewMode("quiz");
@@ -428,7 +543,19 @@ export default function Home() {
             ...current,
             totalMs: current.totalMs + answerMs,
             correctCount: current.correctCount + (correct ? 1 : 0),
-            answeredCount: current.answeredCount + 1
+            answeredCount: current.answeredCount + 1,
+            wrongQuestions: correct
+              ? current.wrongQuestions
+              : [
+                  ...current.wrongQuestions,
+                  {
+                    questionId: question.id,
+                    hand: question.hand,
+                    melds: question.melds,
+                    answers: question.answers,
+                    selectedTiles
+                  }
+                ]
           }
         : current
     );
@@ -457,6 +584,15 @@ export default function Home() {
     const nextSession = { ...session, position: nextPosition };
     setSession(nextSession);
     loadQuestion(nextSession.order[nextPosition] ?? 0);
+  };
+
+  const retryCompletedSession = () => {
+    if (!session) {
+      returnToMenu();
+      return;
+    }
+
+    startQuestionSet(createShuffledIndexes(session.order), session.label ?? "もう一度");
   };
 
   const renderQuestionList = () => (
@@ -632,18 +768,148 @@ export default function Home() {
     </section>
   );
 
-  const renderTimeAttackComplete = () => (
-    <section className="panel completionPanel" aria-labelledby="completion-title">
-      <h2 id="completion-title">タイムアタック完走</h2>
-      <div className="completionStats">
-        <span>正解 {session?.correctCount ?? 0} / {session?.answeredCount ?? 0}</span>
-        <span>回答時間 {formatTime(session?.totalMs ?? 0)}</span>
-      </div>
-      <button className="nextButton" type="button" onClick={returnToMenu}>
-        メニューへ
-      </button>
-    </section>
-  );
+  const renderTimeAttackComplete = () => {
+    const questionCount = session?.order.length ?? 0;
+    const correctCount = session?.correctCount ?? 0;
+    const answeredCount = session?.answeredCount ?? questionCount;
+    const mistakeCount = Math.max(0, answeredCount - correctCount);
+    const totalMs = session?.totalMs ?? 0;
+    const averageMs = questionCount > 0 ? totalMs / questionCount : 0;
+    const score = calculateScore(questionCount, correctCount, mistakeCount, totalMs);
+    const rank = rankForResult(questionCount, correctCount, totalMs);
+    const scoreProgress = Math.min(1, score / Math.max(1, questionCount * 30));
+    const wrongQuestions = session?.wrongQuestions ?? [];
+
+    return (
+      <section className="panel completionPanel recordPanel" aria-labelledby="completion-title">
+        <div className="resultHeader">
+          <div>
+            <p className="menuEyebrow">RESULT</p>
+            <h2 id="completion-title">成績発表</h2>
+          </div>
+          <span className="resultModePill">{session?.label ?? "挑戦"}</span>
+        </div>
+
+        <div className="scoreCard" aria-label={`ランク ${rank}、${score}点`}>
+          <div
+            className="scoreGauge"
+            style={{ "--score-progress": `${scoreProgress * 360}deg` } as CSSProperties}
+          >
+            <div className="scoreGaugeCenter">
+              <span className={`rankBadgeResult ${rankClassName(rank)}`}>{rank}</span>
+              <strong>
+                {score}
+                <small>pt</small>
+              </strong>
+            </div>
+          </div>
+          <p className="rankComment">{rankComment(rank)}</p>
+        </div>
+
+        <div className="resultStatsGrid" aria-label="採点内訳">
+          <div className="resultStatCard">
+            <span>正解</span>
+            <strong>
+              {correctCount} / {questionCount}
+            </strong>
+          </div>
+          <div className="resultStatCard">
+            <span>ミス</span>
+            <strong>{mistakeCount}</strong>
+          </div>
+          <div className="resultStatCard">
+            <span>正答率</span>
+            <strong>{formatRatePercent(correctCount, questionCount)}</strong>
+          </div>
+          <div className="resultStatCard">
+            <span>回答時間</span>
+            <strong>{formatTime(totalMs)}</strong>
+          </div>
+          <div className="resultStatCard">
+            <span>1問平均</span>
+            <strong>{formatTime(averageMs)}</strong>
+          </div>
+        </div>
+
+        {wrongQuestions.length > 0 ? (
+          <section className="wrongQuestionBlock" aria-labelledby="wrong-question-title">
+            <div className="sectionTitleRow">
+              <h3 id="wrong-question-title">誤答問題</h3>
+              <span className="questionCount">{wrongQuestions.length}問</span>
+            </div>
+            <div className="wrongQuestionList">
+              {wrongQuestions.map((item, index) => {
+                const totalTileCount = item.hand.length + item.melds.flat().length;
+
+                return (
+                  <div className="wrongQuestionItem" key={`${item.questionId}-${index}`}>
+                    <div className="wrongQuestionTitle">
+                      <strong>問題 {item.questionId}</strong>
+                    </div>
+                    <div
+                      className="wrongQuestionTiles"
+                      aria-label="誤答した問題の牌姿"
+                      style={{ "--wrong-tile-count": totalTileCount } as CSSProperties}
+                    >
+                      {item.hand.map((tileId, tileIndex) => (
+                        <TileView
+                          key={`wrong-hand-${item.questionId}-${tileId}-${tileIndex}`}
+                          tileId={tileId}
+                          compact
+                        />
+                      ))}
+                      {item.melds.map((meld, meldIndex) => (
+                        <span className="wrongMeld" key={`wrong-meld-${item.questionId}-${meldIndex}`}>
+                          {meld.map((tileId, tileIndex) => (
+                            <TileView
+                              key={`wrong-meld-${item.questionId}-${meldIndex}-${tileId}-${tileIndex}`}
+                              tileId={tileId}
+                              compact
+                            />
+                          ))}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="wrongAnswerRows">
+                      <span>正解</span>
+                      <span className="wrongAnswerTiles">
+                        {item.answers.map((tileId) => (
+                          <TileView key={`wrong-answer-${item.questionId}-${tileId}`} tileId={tileId} compact />
+                        ))}
+                      </span>
+                      <span>選択</span>
+                      <span className="wrongAnswerTiles">
+                        {item.selectedTiles.length > 0
+                          ? item.selectedTiles.map((tileId) => (
+                              <TileView
+                                key={`wrong-selected-${item.questionId}-${tileId}`}
+                                tileId={tileId}
+                                compact
+                              />
+                            ))
+                          : "-"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ) : (
+          <p className="perfectRunText">全問正解。これは気持ちいいです。</p>
+        )}
+
+        <div className="completionActions">
+          <button className="clearButton" type="button" onClick={returnToMenu}>
+            メニューへ
+          </button>
+          <button className="nextButton" type="button" onClick={retryCompletedSession}>
+            もう一度
+          </button>
+        </div>
+      </section>
+    );
+  };
 
   const renderQuiz = () => (
     <>
