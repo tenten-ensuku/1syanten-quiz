@@ -654,7 +654,7 @@ export default function Home() {
     <section className="menuSection" aria-labelledby="question-list-title">
       <div className="sectionTitleRow">
         <h2 id="question-list-title">問題一覧</h2>
-        <span className="questionCount">56種収録</span>
+        <span className="questionCount">{QUIZ_QUESTIONS.length}種収録</span>
       </div>
       <div className="questionList">
         {QUIZ_QUESTIONS.map((baseQuestion, index) => {
@@ -743,7 +743,7 @@ export default function Home() {
       <section className="menuSection" aria-labelledby="challenge-title">
         <div className="sectionTitleRow">
           <h2 id="challenge-title">挑戦</h2>
-          <span className="questionCount">全56種</span>
+          <span className="questionCount">全{QUIZ_QUESTIONS.length}種</span>
         </div>
         <div className="challengeGrid">
           <button className="challengeCard primary" type="button" onClick={startTimeAttack}>
@@ -752,7 +752,7 @@ export default function Home() {
           </button>
           <button className="challengeCard" type="button" onClick={startAllQuestions}>
             <span className="challengeLabel">全問</span>
-            <span className="challengeMeta">56種を通しで挑戦</span>
+            <span className="challengeMeta">{QUIZ_QUESTIONS.length}種を通しで挑戦</span>
           </button>
         </div>
         <div className="typeChallengePanel">
