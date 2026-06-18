@@ -23,6 +23,7 @@ type QuestionStats = {
 type StatsByQuestion = Record<string, QuestionStats>;
 
 type ResultRank = "神" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
+type ShantenCategoryId = "two-meld" | "headless-1" | "headless-2" | "floating";
 
 type SessionWrongQuestion = {
   questionId: string;
@@ -30,6 +31,8 @@ type SessionWrongQuestion = {
   melds: TileId[][];
   answers: TileId[];
   selectedTiles: TileId[];
+  correctCategoryId: ShantenCategoryId;
+  selectedCategoryId: ShantenCategoryId;
 };
 
 type PlaySession = {
@@ -47,7 +50,7 @@ type ViewMode = "menu" | "quiz" | "timeAttackComplete";
 type MenuTab = "challenge" | "questions" | "analysis" | "ranking";
 type TileChoiceGroup = { label: string; tiles: TileId[] };
 type TypeFilterOption = {
-  id: string;
+  id: ShantenCategoryId;
   types: ShantenType[];
   groupLabel: string;
   mainLabel: string;
@@ -131,6 +134,19 @@ const TYPE_FILTER_OPTIONS: TypeFilterOption[] = [
     mainLabel: "くっつき"
   }
 ];
+
+function getShantenCategoryId(shantenTypes: ShantenType[]): ShantenCategoryId {
+  return (
+    TYPE_FILTER_OPTIONS.find((option) =>
+      option.types.some((type) => shantenTypes.includes(type))
+    )?.id ?? "two-meld"
+  );
+}
+
+function getShantenCategoryLabel(categoryId: ShantenCategoryId) {
+  const option = TYPE_FILTER_OPTIONS.find((candidate) => candidate.id === categoryId);
+  return option ? `${option.groupLabel} ${option.mainLabel}` : "";
+}
 
 function createVisibleTileGroups(hand: TileId[], melds: TileId[][]): TileChoiceGroup[] {
   const visibleTileSet = new Set([...hand, ...melds.flat()]);
@@ -373,6 +389,8 @@ export default function Home() {
   const [session, setSession] = useState<PlaySession | null>(null);
   const [question, setQuestion] = useState(() => createRandomVariant(QUIZ_QUESTIONS[0]));
   const [selectedTiles, setSelectedTiles] = useState<TileId[]>([]);
+  const [selectedShantenCategoryId, setSelectedShantenCategoryId] =
+    useState<ShantenCategoryId | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [lastAnswerMs, setLastAnswerMs] = useState(0);
   const [stats, setStats] = useState<StatsByQuestion>({});
@@ -393,7 +411,11 @@ export default function Home() {
     }
   }, [hasLoadedStats, stats]);
 
-  const isCorrect = hasSubmitted && isSameTileSet(selectedTiles, question.answers);
+  const correctShantenCategoryId = getShantenCategoryId(question.shantenTypes);
+  const isShantenCategoryCorrect =
+    selectedShantenCategoryId === correctShantenCategoryId;
+  const isTileAnswerCorrect = isSameTileSet(selectedTiles, question.answers);
+  const isCorrect = hasSubmitted && isShantenCategoryCorrect && isTileAnswerCorrect;
   const explanationAssets = getExplanationAssets(question.shantenTypes);
   const blockedTiles = createBlockedTileSet(question.hand, question.melds);
   const visibleTileGroups = createVisibleTileGroups(question.hand, question.melds);
@@ -421,6 +443,7 @@ export default function Home() {
   const loadQuestion = (baseIndex: number) => {
     setQuestion(createRandomVariant(QUIZ_QUESTIONS[baseIndex]));
     setSelectedTiles([]);
+    setSelectedShantenCategoryId(null);
     setHasSubmitted(false);
     setLastAnswerMs(0);
     setQuestionStartedAt(performance.now());
@@ -485,6 +508,7 @@ export default function Home() {
     setQuestionStartedAt(null);
     setSession(null);
     setSelectedTiles([]);
+    setSelectedShantenCategoryId(null);
     setHasSubmitted(false);
   };
 
@@ -545,12 +569,14 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
-    if (hasSubmitted) {
+    if (hasSubmitted || !selectedShantenCategoryId) {
       return;
     }
 
     const answerMs = questionStartedAt ? performance.now() - questionStartedAt : 0;
-    const correct = isSameTileSet(selectedTiles, question.answers);
+    const correct =
+      selectedShantenCategoryId === correctShantenCategoryId &&
+      isSameTileSet(selectedTiles, question.answers);
     setLastAnswerMs(answerMs);
     setHasSubmitted(true);
     setQuestionStartedAt(null);
@@ -581,7 +607,9 @@ export default function Home() {
                     hand: question.hand,
                     melds: question.melds,
                     answers: question.answers,
-                    selectedTiles
+                    selectedTiles,
+                    correctCategoryId: correctShantenCategoryId,
+                    selectedCategoryId: selectedShantenCategoryId
                   }
                 ]
           }
@@ -592,6 +620,7 @@ export default function Home() {
   const handleClear = () => {
     if (!hasSubmitted) {
       setSelectedTiles([]);
+      setSelectedShantenCategoryId(null);
     }
   };
 
@@ -895,6 +924,12 @@ export default function Home() {
                       ))}
                     </div>
                     <div className="wrongAnswerRows">
+                      <span>型</span>
+                      <span className="wrongCategoryText">
+                        正解: {getShantenCategoryLabel(item.correctCategoryId)}
+                        <br />
+                        選択: {getShantenCategoryLabel(item.selectedCategoryId)}
+                      </span>
                       <span>正解</span>
                       <span className="wrongAnswerTiles">
                         {item.answers.map((tileId) => (
@@ -980,35 +1015,70 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="panel choicesPanel" aria-label="回答する牌を選択">
-        <div
-          className="choiceRows"
-          onPointerMove={handlePointerSelectMove}
-          onPointerUp={handlePointerSelectEnd}
-          onPointerCancel={handlePointerSelectEnd}
-          onPointerLeave={handlePointerSelectEnd}
-        >
-          {visibleTileGroups.map((group) => (
-            <div
-              className="choiceRow"
-              key={group.label}
-              aria-label={group.label}
-              style={{ "--choice-tile-count": group.tiles.length } as CSSProperties}
-            >
-              {group.tiles.map((tileId) => (
-                <TileButton
-                  key={tileId}
-                  tileId={tileId}
-                  isSelected={selectedTiles.includes(tileId)}
-                  isAnswer={hasSubmitted && question.answers.includes(tileId)}
-                  isBlocked={blockedTiles.has(tileId)}
-                  isDisabled={hasSubmitted || blockedTiles.has(tileId)}
-                  onSelect={handleSelect}
-                  onPointerSelectStart={handlePointerSelectStart}
-                />
-              ))}
-            </div>
-          ))}
+      <section className="panel choicesPanel" aria-label="一向聴タイプと受け入れ牌を回答">
+        <div className="shantenAnswerBlock">
+          <h2>① 一向聴タイプを選択</h2>
+          <div className="shantenCategoryGrid" aria-label="一向聴タイプ">
+            {TYPE_FILTER_OPTIONS.map((option) => {
+              const isSelected = selectedShantenCategoryId === option.id;
+              const isAnswer = correctShantenCategoryId === option.id;
+              const classNames = [
+                "shantenCategoryButton",
+                isSelected ? "selected" : "",
+                hasSubmitted && isAnswer ? "answer" : "",
+                hasSubmitted && isSelected && !isAnswer ? "incorrect" : ""
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              return (
+                <button
+                  className={classNames}
+                  key={`answer-category-${option.id}`}
+                  type="button"
+                  aria-pressed={isSelected}
+                  disabled={hasSubmitted}
+                  onClick={() => setSelectedShantenCategoryId(option.id)}
+                >
+                  <span className="shantenCategoryGroup">{option.groupLabel}</span>
+                  <span className="shantenCategoryMain">{option.mainLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="tileAnswerBlock">
+          <h2>② 受け入れ牌を選択</h2>
+          <div
+            className="choiceRows"
+            onPointerMove={handlePointerSelectMove}
+            onPointerUp={handlePointerSelectEnd}
+            onPointerCancel={handlePointerSelectEnd}
+            onPointerLeave={handlePointerSelectEnd}
+          >
+            {visibleTileGroups.map((group) => (
+              <div
+                className="choiceRow"
+                key={group.label}
+                aria-label={group.label}
+                style={{ "--choice-tile-count": group.tiles.length } as CSSProperties}
+              >
+                {group.tiles.map((tileId) => (
+                  <TileButton
+                    key={tileId}
+                    tileId={tileId}
+                    isSelected={selectedTiles.includes(tileId)}
+                    isAnswer={hasSubmitted && question.answers.includes(tileId)}
+                    isBlocked={blockedTiles.has(tileId)}
+                    isDisabled={hasSubmitted || blockedTiles.has(tileId)}
+                    onSelect={handleSelect}
+                    onPointerSelectStart={handlePointerSelectStart}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="choiceActions">
@@ -1016,7 +1086,7 @@ export default function Home() {
             className="submitButton"
             type="button"
             onClick={handleSubmit}
-            disabled={hasSubmitted}
+            disabled={hasSubmitted || !selectedShantenCategoryId}
           >
             解答する
           </button>
@@ -1024,7 +1094,10 @@ export default function Home() {
             className="clearButton"
             type="button"
             onClick={handleClear}
-            disabled={hasSubmitted || selectedTiles.length === 0}
+            disabled={
+              hasSubmitted ||
+              (selectedTiles.length === 0 && !selectedShantenCategoryId)
+            }
           >
             クリア
           </button>
@@ -1038,6 +1111,32 @@ export default function Home() {
           </div>
 
           <p className="answerTime">回答時間 {formatTime(lastAnswerMs)}</p>
+
+          <div className="answerJudgementGrid">
+            <div
+              className={
+                isShantenCategoryCorrect
+                  ? "judgementItem correct"
+                  : "judgementItem incorrect"
+              }
+            >
+              <span>一向聴タイプ</span>
+              <strong>{isShantenCategoryCorrect ? "正解" : "不正解"}</strong>
+            </div>
+            <div
+              className={
+                isTileAnswerCorrect ? "judgementItem correct" : "judgementItem incorrect"
+              }
+            >
+              <span>受け入れ牌</span>
+              <strong>{isTileAnswerCorrect ? "正解" : "不正解"}</strong>
+            </div>
+          </div>
+
+          <div className="categoryAnswerSummary">
+            <span>正解タイプ</span>
+            <strong>{getShantenCategoryLabel(correctShantenCategoryId)}</strong>
+          </div>
 
           <div className="answerBlock">
             <h2>正解牌一覧</h2>
