@@ -126,6 +126,13 @@ def resolve_types(row_number: int, source: str, row: dict[str, str]) -> list[str
     return types
 
 
+def resolve_explanation(row_number: int, source: str, explanation: str) -> str:
+    # Keep row 68's explanation aligned with the corrected souzu block.
+    if row_number == 68 and source == "134568m234p2244s":
+        return explanation.replace("1345688ｍ", "134568ｍ").replace("3ｐ", "3ｓ")
+    return explanation
+
+
 def ts_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
@@ -182,7 +189,9 @@ def main() -> None:
                 "id": make_question_id(len(questions)),
                 "source": source,
                 "answers": answers,
-                "explanation": row.get("解説") or "",
+                "explanation": resolve_explanation(
+                    row_number, source_key, row.get("解説") or ""
+                ),
                 "types": resolve_types(row_number, source_key, row),
             }
         )
