@@ -1523,6 +1523,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       "2m",
       "3m",
       "4m",
+      "5m",
       "6s",
       "9s"
     ],
