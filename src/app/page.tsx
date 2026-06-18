@@ -334,7 +334,7 @@ function getExplanationAssets(shantenTypes: ShantenType[]): ExplanationAsset[] {
       case "ヘッドレス2型":
         return [createExplanationAsset("04_headless2.png", "3面子 ヘッドレス2型の解説図")];
       case "くっつき":
-        return [];
+        return [createExplanationAsset("05-kuttuki.png", "3面子 くっつき一向聴の解説図")];
     }
   });
 }
