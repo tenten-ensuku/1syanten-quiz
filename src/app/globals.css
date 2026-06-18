@@ -827,6 +827,11 @@ h2 {
   background: var(--incorrect-bg);
 }
 
+.judgementItem.unanswered {
+  color: var(--muted);
+  background: rgba(104, 116, 131, 0.1);
+}
+
 .categoryAnswerSummary {
   display: flex;
   flex-wrap: wrap;

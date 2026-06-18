@@ -32,7 +32,7 @@ type SessionWrongQuestion = {
   answers: TileId[];
   selectedTiles: TileId[];
   correctCategoryId: ShantenCategoryId;
-  selectedCategoryId: ShantenCategoryId;
+  selectedCategoryId: ShantenCategoryId | null;
 };
 
 type PlaySession = {
@@ -415,7 +415,7 @@ export default function Home() {
   const isShantenCategoryCorrect =
     selectedShantenCategoryId === correctShantenCategoryId;
   const isTileAnswerCorrect = isSameTileSet(selectedTiles, question.answers);
-  const isCorrect = hasSubmitted && isShantenCategoryCorrect && isTileAnswerCorrect;
+  const isCorrect = hasSubmitted && isTileAnswerCorrect;
   const explanationAssets = getExplanationAssets(question.shantenTypes);
   const blockedTiles = createBlockedTileSet(question.hand, question.melds);
   const visibleTileGroups = createVisibleTileGroups(question.hand, question.melds);
@@ -569,14 +569,12 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
-    if (hasSubmitted || !selectedShantenCategoryId) {
+    if (hasSubmitted) {
       return;
     }
 
     const answerMs = questionStartedAt ? performance.now() - questionStartedAt : 0;
-    const correct =
-      selectedShantenCategoryId === correctShantenCategoryId &&
-      isSameTileSet(selectedTiles, question.answers);
+    const correct = isSameTileSet(selectedTiles, question.answers);
     setLastAnswerMs(answerMs);
     setHasSubmitted(true);
     setQuestionStartedAt(null);
@@ -928,7 +926,10 @@ export default function Home() {
                       <span className="wrongCategoryText">
                         正解: {getShantenCategoryLabel(item.correctCategoryId)}
                         <br />
-                        選択: {getShantenCategoryLabel(item.selectedCategoryId)}
+                        選択:{" "}
+                        {item.selectedCategoryId
+                          ? getShantenCategoryLabel(item.selectedCategoryId)
+                          : "未選択"}
                       </span>
                       <span>正解</span>
                       <span className="wrongAnswerTiles">
@@ -1017,7 +1018,7 @@ export default function Home() {
 
       <section className="panel choicesPanel" aria-label="一向聴タイプと受け入れ牌を回答">
         <div className="shantenAnswerBlock">
-          <h2>① 一向聴タイプを選択</h2>
+          <h2>① 一向聴タイプを選択（任意）</h2>
           <div className="shantenCategoryGrid" aria-label="一向聴タイプ">
             {TYPE_FILTER_OPTIONS.map((option) => {
               const isSelected = selectedShantenCategoryId === option.id;
@@ -1086,7 +1087,7 @@ export default function Home() {
             className="submitButton"
             type="button"
             onClick={handleSubmit}
-            disabled={hasSubmitted || !selectedShantenCategoryId}
+            disabled={hasSubmitted}
           >
             解答する
           </button>
@@ -1115,13 +1116,21 @@ export default function Home() {
           <div className="answerJudgementGrid">
             <div
               className={
-                isShantenCategoryCorrect
+                !selectedShantenCategoryId
+                  ? "judgementItem unanswered"
+                  : isShantenCategoryCorrect
                   ? "judgementItem correct"
                   : "judgementItem incorrect"
               }
             >
               <span>一向聴タイプ</span>
-              <strong>{isShantenCategoryCorrect ? "正解" : "不正解"}</strong>
+              <strong>
+                {!selectedShantenCategoryId
+                  ? "未選択"
+                  : isShantenCategoryCorrect
+                    ? "正解"
+                    : "不正解"}
+              </strong>
             </div>
             <div
               className={
