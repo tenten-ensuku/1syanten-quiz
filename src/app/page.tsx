@@ -90,10 +90,6 @@ function createShuffledIndexes(indexes: number[], limit = indexes.length) {
   return shuffledIndexes.slice(0, limit);
 }
 
-function createShuffledQuestionIndexes(limit = QUIZ_QUESTIONS.length) {
-  return createShuffledIndexes(QUIZ_QUESTIONS.map((_, index) => index), limit);
-}
-
 const TILE_GROUPS: TileChoiceGroup[] = [
   { label: "萬子", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
   { label: "筒子", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
@@ -397,6 +393,7 @@ export default function Home() {
   const [hasLoadedStats, setHasLoadedStats] = useState(false);
   const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
   const [selectedTypeFilterIds, setSelectedTypeFilterIds] = useState<string[]>([]);
+  const [includeExtraQuestions, setIncludeExtraQuestions] = useState(true);
   const isPointerSelectingRef = useRef(false);
   const pointerSelectedTilesRef = useRef(new Set<TileId>());
 
@@ -435,8 +432,14 @@ export default function Home() {
       (option) => option.types
     )
   );
+  const challengeQuestionIndexes = QUIZ_QUESTIONS.map((baseQuestion, index) =>
+    includeExtraQuestions || !baseQuestion.id.startsWith("EX-") ? index : -1
+  ).filter((index) => index >= 0);
   const typeFilteredQuestionIndexes = QUIZ_QUESTIONS.map((baseQuestion, index) =>
-    baseQuestion.shantenTypes.some((type) => selectedTypeSet.has(type)) ? index : -1
+    challengeQuestionIndexes.includes(index) &&
+    baseQuestion.shantenTypes.some((type) => selectedTypeSet.has(type))
+      ? index
+      : -1
   ).filter((index) => index >= 0);
   const typeFilteredQuestionCount = typeFilteredQuestionIndexes.length;
 
@@ -480,11 +483,11 @@ export default function Home() {
   };
 
   const startTimeAttack = () => {
-    startQuestionSet(createShuffledQuestionIndexes(10), "10問ランダム");
+    startQuestionSet(createShuffledIndexes(challengeQuestionIndexes, 10), "10問ランダム");
   };
 
   const startAllQuestions = () => {
-    startQuestionSet(QUIZ_QUESTIONS.map((_, index) => index), "全問");
+    startQuestionSet(challengeQuestionIndexes, "全問");
   };
 
   const toggleTypeFilter = (filterId: string) => {
@@ -751,7 +754,25 @@ export default function Home() {
       <section className="menuSection" aria-labelledby="challenge-title">
         <div className="sectionTitleRow">
           <h2 id="challenge-title">挑戦</h2>
-          <span className="questionCount">全{QUIZ_QUESTIONS.length}種</span>
+          <span className="questionCount">全{challengeQuestionIndexes.length}種</span>
+        </div>
+        <div className="extraQuestionToggle" aria-label="EX問題の出題設定">
+          <button
+            className={includeExtraQuestions ? "extraQuestionToggleButton active" : "extraQuestionToggleButton"}
+            type="button"
+            aria-pressed={includeExtraQuestions}
+            onClick={() => setIncludeExtraQuestions(true)}
+          >
+            EX含む
+          </button>
+          <button
+            className={!includeExtraQuestions ? "extraQuestionToggleButton active" : "extraQuestionToggleButton"}
+            type="button"
+            aria-pressed={!includeExtraQuestions}
+            onClick={() => setIncludeExtraQuestions(false)}
+          >
+            EX含まない
+          </button>
         </div>
         <div className="challengeGrid">
           <button className="challengeCard primary" type="button" onClick={startTimeAttack}>
@@ -760,7 +781,7 @@ export default function Home() {
           </button>
           <button className="challengeCard" type="button" onClick={startAllQuestions}>
             <span className="challengeLabel">全問</span>
-            <span className="challengeMeta">{QUIZ_QUESTIONS.length}種を通しで挑戦</span>
+            <span className="challengeMeta">{challengeQuestionIndexes.length}種を通しで挑戦</span>
           </button>
         </div>
         <div className="typeChallengePanel">
