@@ -1186,7 +1186,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       "8p",
       "9p"
     ],
-    "くっつき。４連形2345ｍと亜両面6788ｐのくっつきに注意。",
+    "くっつき。33ｍを雀頭とし、４連形2345ｍと亜両面6788ｐのくっつき。",
     ["くっつき"]
   ),
   createQuestion(
