@@ -30,7 +30,7 @@ TILE_ORDER = [
     "chun",
 ]
 TILE_ORDER_INDEX = {tile_id: index for index, tile_id in enumerate(TILE_ORDER)}
-GROUP_LABELS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "⑪"]
+GROUP_LABELS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧"]
 
 QUESTION_PATTERN = re.compile(
     r'createQuestion\(\s*"([^"]+)",\s*"([^"]+)",\s*\[(.*?)\],\s*'
@@ -105,6 +105,8 @@ def parse_existing_answers(source_text: str) -> dict[str, list[str]]:
 
 
 def make_question_id(index: int) -> str:
+    if index >= 64:
+        return f"EX-{index - 63}"
     group_index = index // 8
     number = index % 8 + 1
     return f"{GROUP_LABELS[group_index]}-{number}"

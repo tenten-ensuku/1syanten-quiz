@@ -1171,7 +1171,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["完全形"]
   ),
   createQuestion(
-    "⑨-1",
+    "EX-1",
     "233334455m6788p",
     [
       "1m",
@@ -1190,7 +1190,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑨-2",
+    "EX-2",
     "4455567p455567s",
     [
       "3p",
@@ -1207,7 +1207,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["完全形"]
   ),
   createQuestion(
-    "⑨-3",
+    "EX-3",
     "344445556p4456s",
     [
       "1p",
@@ -1228,7 +1228,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑨-4",
+    "EX-4",
     "2223333455m667p",
     [
       "2m",
@@ -1246,7 +1246,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑨-5",
+    "EX-5",
     "345m45556778p45s",
     [
       "3p",
@@ -1262,7 +1262,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["ヘッドレス1型"]
   ),
   createQuestion(
-    "⑨-6",
+    "EX-6",
     "56777m344456p66s",
     [
       "4m",
@@ -1277,7 +1277,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["完全形"]
   ),
   createQuestion(
-    "⑨-7",
+    "EX-7",
     "335667789m4456s",
     [
       "3m",
@@ -1298,7 +1298,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑨-8",
+    "EX-8",
     "2344567m345677p",
     [
       "1m",
@@ -1323,7 +1323,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑩-1",
+    "EX-9",
     "4567m223345556p",
     [
       "4m",
@@ -1340,7 +1340,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["ヘッドレス1型"]
   ),
   createQuestion(
-    "⑩-2",
+    "EX-10",
     "245567777p3456s",
     [
       "2p",
@@ -1355,7 +1355,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["ヘッドレス1型"]
   ),
   createQuestion(
-    "⑩-3",
+    "EX-11",
     "35567m33445557p",
     [
       "3m",
@@ -1373,7 +1373,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["ヘッドレス2型"]
   ),
   createQuestion(
-    "⑩-4",
+    "EX-12",
     "355678m3456789p",
     [
       "1m",
@@ -1396,7 +1396,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑩-5",
+    "EX-13",
     "23456678m77899p",
     [
       "1m",
@@ -1417,7 +1417,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["ヘッドレス2型"]
   ),
   createQuestion(
-    "⑩-6",
+    "EX-14",
     "2233444m455567s",
     [
       "1m",
@@ -1439,7 +1439,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑩-7",
+    "EX-15",
     "1112456p234557s",
     [
       "1p",
@@ -1458,7 +1458,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑩-8",
+    "EX-16",
     "566667778m4567s",
     [
       "3m",
@@ -1480,7 +1480,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑪-1",
+    "EX-17",
     "3345567m3678p88s",
     [
       "1m",
@@ -1501,7 +1501,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["くっつき"]
   ),
   createQuestion(
-    "⑪-2",
+    "EX-18",
     "334567788m2344s",
     [
       "3m",
@@ -1516,7 +1516,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     ["ヘッドレス1型"]
   ),
   createQuestion(
-    "⑪-3",
+    "EX-19",
     "113344m6777889s",
     [
       "1m",
