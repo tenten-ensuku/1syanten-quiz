@@ -115,6 +115,10 @@ def make_question_id(index: int) -> str:
 def resolve_types(row_number: int, source: str, row: dict[str, str]) -> list[str]:
     types = [column for column in TYPE_COLUMNS if row.get(column) == "TRUE"]
 
+    # EX-20 is explicitly explained through both headless and extra-tile views.
+    if row_number == 93 and source == "23345667m56778s":
+        return ["余剰牌型", "ヘッドレス1型"]
+
     # Prior explicit classification request: ⑦-2 belongs only to headless type 1.
     if source == "34456778m78s456p":
         return ["ヘッドレス1型"]
@@ -198,8 +202,8 @@ def main() -> None:
             }
         )
 
-    if len(questions) != 83:
-        raise ValueError(f"Expected 83 questions, found {len(questions)}")
+    if len(questions) != 84:
+        raise ValueError(f"Expected 84 questions, found {len(questions)}")
 
     prefix = existing_source.split("export const QUIZ_QUESTIONS", maxsplit=1)[0]
     rendered_questions = ",\n".join(render_question(question) for question in questions)
