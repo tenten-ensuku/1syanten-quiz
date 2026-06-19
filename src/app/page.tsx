@@ -641,6 +641,14 @@ export default function Home() {
     loadQuestion(nextSession.order[nextPosition] ?? 0);
   };
 
+  const handleNextSingleQuestion = () => {
+    const nextBaseIndex = currentBaseIndex + 1;
+    if (nextBaseIndex >= QUIZ_QUESTIONS.length) {
+      return;
+    }
+    startSingleQuestion(nextBaseIndex);
+  };
+
   const retryCompletedSession = () => {
     if (!session) {
       returnToMenu();
@@ -1179,13 +1187,25 @@ export default function Home() {
             <ExplanationText explanation={question.explanation} />
           </div>
 
-          <button className="nextButton" type="button" onClick={handleNext}>
-            {session?.mode === "timeAttack"
-              ? session.position + 1 >= session.order.length
-                ? "結果を見る"
-                : "次の問題"
-              : "問題一覧へ"}
-          </button>
+          {session?.mode === "timeAttack" ? (
+            <button className="nextButton" type="button" onClick={handleNext}>
+              {session.position + 1 >= session.order.length ? "結果を見る" : "次の問題"}
+            </button>
+          ) : (
+            <div className="resultNavigation">
+              <button
+                className="nextButton"
+                type="button"
+                onClick={handleNextSingleQuestion}
+                disabled={currentBaseIndex + 1 >= QUIZ_QUESTIONS.length}
+              >
+                次の問題へ
+              </button>
+              <button className="listReturnButton" type="button" onClick={returnToMenu}>
+                問題一覧へ
+              </button>
+            </div>
+          )}
         </section>
       )}
     </>
