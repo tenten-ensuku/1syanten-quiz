@@ -393,7 +393,9 @@ export default function Home() {
   const [hasLoadedStats, setHasLoadedStats] = useState(false);
   const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
   const [selectedTypeFilterIds, setSelectedTypeFilterIds] = useState<string[]>([]);
-  const [includeExtraQuestions, setIncludeExtraQuestions] = useState(true);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<Set<string>>(
+    () => new Set(["基本", "応用"])
+  );
   const isPointerSelectingRef = useRef(false);
   const pointerSelectedTilesRef = useRef(new Set<TileId>());
 
@@ -433,7 +435,7 @@ export default function Home() {
     )
   );
   const challengeQuestionIndexes = QUIZ_QUESTIONS.map((baseQuestion, index) =>
-    includeExtraQuestions || !baseQuestion.id.startsWith("EX-") ? index : -1
+    selectedDifficulties.has(baseQuestion.difficulty) ? index : -1
   ).filter((index) => index >= 0);
   const typeFilteredQuestionIndexes = QUIZ_QUESTIONS.map((baseQuestion, index) =>
     challengeQuestionIndexes.includes(index) &&
@@ -442,6 +444,22 @@ export default function Home() {
       : -1
   ).filter((index) => index >= 0);
   const typeFilteredQuestionCount = typeFilteredQuestionIndexes.length;
+  const difficultyCounts = {
+    基本: QUIZ_QUESTIONS.filter((question) => question.difficulty === "基本").length,
+    応用: QUIZ_QUESTIONS.filter((question) => question.difficulty === "応用").length
+  };
+
+  const toggleDifficulty = (difficulty: "基本" | "応用") => {
+    setSelectedDifficulties((current) => {
+      const next = new Set(current);
+      if (next.has(difficulty)) {
+        next.delete(difficulty);
+      } else {
+        next.add(difficulty);
+      }
+      return next;
+    });
+  };
 
   const loadQuestion = (baseIndex: number) => {
     setQuestion(createRandomVariant(QUIZ_QUESTIONS[baseIndex]));
@@ -756,30 +774,35 @@ export default function Home() {
           <h2 id="challenge-title">挑戦</h2>
           <span className="questionCount">全{challengeQuestionIndexes.length}種</span>
         </div>
-        <div className="extraQuestionToggle" aria-label="EX問題の出題設定">
-          <button
-            className={includeExtraQuestions ? "extraQuestionToggleButton active" : "extraQuestionToggleButton"}
-            type="button"
-            aria-pressed={includeExtraQuestions}
-            onClick={() => setIncludeExtraQuestions(true)}
-          >
-            EX含む
-          </button>
-          <button
-            className={!includeExtraQuestions ? "extraQuestionToggleButton active" : "extraQuestionToggleButton"}
-            type="button"
-            aria-pressed={!includeExtraQuestions}
-            onClick={() => setIncludeExtraQuestions(false)}
-          >
-            EX含まない
-          </button>
+        <div className="difficultySelector" aria-label="出題難易度を選択">
+          {(["基本", "応用"] as const).map((difficulty) => (
+            <label className="difficultyOption" key={difficulty}>
+              <input
+                type="checkbox"
+                checked={selectedDifficulties.has(difficulty)}
+                onChange={() => toggleDifficulty(difficulty)}
+              />
+              <span>{difficulty}</span>
+              <small>{difficultyCounts[difficulty]}問</small>
+            </label>
+          ))}
         </div>
         <div className="challengeGrid">
-          <button className="challengeCard primary" type="button" onClick={startTimeAttack}>
+          <button
+            className="challengeCard primary"
+            type="button"
+            onClick={startTimeAttack}
+            disabled={challengeQuestionIndexes.length === 0}
+          >
             <span className="challengeLabel">10問ランダム</span>
             <span className="challengeMeta">回答中のみ計時</span>
           </button>
-          <button className="challengeCard" type="button" onClick={startAllQuestions}>
+          <button
+            className="challengeCard"
+            type="button"
+            onClick={startAllQuestions}
+            disabled={challengeQuestionIndexes.length === 0}
+          >
             <span className="challengeLabel">全問</span>
             <span className="challengeMeta">{challengeQuestionIndexes.length}種を通しで挑戦</span>
           </button>

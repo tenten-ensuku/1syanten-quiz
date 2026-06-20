@@ -17,6 +17,7 @@ QUIZ_DATA_PATH = Path("src/lib/quizData.ts")
 EXPLANATIONS_PATH = Path("src/lib/generatedExplanations.ts")
 
 TYPE_COLUMNS = ["余剰牌型", "完全形", "ヘッドレス1型", "ヘッドレス2型", "くっつき"]
+DIFFICULTY_LEVELS = ["基本", "応用"]
 TILE_ORDER = [
     *(f"{number}m" for number in range(1, 10)),
     *(f"{number}p" for number in range(1, 10)),
@@ -139,6 +140,15 @@ def resolve_explanation(row_number: int, source: str, explanation: str) -> str:
     return explanation
 
 
+def resolve_difficulty(row_number: int, row: dict[str, str]) -> str:
+    difficulty = (row.get("") or "").strip()
+    if difficulty not in DIFFICULTY_LEVELS:
+        raise ValueError(
+            f"Unknown difficulty at sheet row {row_number}: {difficulty!r}"
+        )
+    return difficulty
+
+
 def ts_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
@@ -161,7 +171,8 @@ def render_question(question: dict[str, object]) -> str:
         f"    {ts_string(question['source'])},\n"
         f"    {answers},\n"
         f"    {ts_string(question['explanation'])},\n"
-        f"    {types}\n"
+        f"    {types},\n"
+        f"    {ts_string(question['difficulty'])}\n"
         "  )"
     )
 
@@ -199,6 +210,7 @@ def main() -> None:
                     row_number, source_key, row.get("解説") or ""
                 ),
                 "types": resolve_types(row_number, source_key, row),
+                "difficulty": resolve_difficulty(row_number, row),
             }
         )
 

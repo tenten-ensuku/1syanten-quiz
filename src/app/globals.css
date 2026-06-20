@@ -168,31 +168,49 @@ h2 {
   padding: 18px;
 }
 
-.extraQuestionToggle {
+.difficultySelector {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
+  gap: 8px;
   margin-bottom: 12px;
-  padding: 4px;
-  border: 1px solid rgba(17, 24, 39, 0.14);
-  border-radius: 8px;
-  background: rgba(17, 24, 39, 0.08);
 }
 
-.extraQuestionToggleButton {
+.difficultyOption {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
   min-height: 40px;
-  border: 0;
-  border-radius: 6px;
-  color: #4b5563;
-  background: transparent;
+  padding: 8px 12px;
+  border: 1px solid rgba(17, 24, 39, 0.14);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.72);
   font-weight: 900;
   cursor: pointer;
 }
 
-.extraQuestionToggleButton.active {
-  color: #ffffff;
-  background: #1f2937;
-  box-shadow: 0 2px 7px rgba(17, 24, 39, 0.22);
+.difficultyOption:has(input:checked) {
+  border-color: rgba(18, 104, 200, 0.46);
+  background: #eaf3ff;
+}
+
+.difficultyOption input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #1268c8;
+}
+
+.difficultyOption small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.challengeCard:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
 }
 
 .challengeGrid {
