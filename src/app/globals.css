@@ -403,9 +403,36 @@ h2 {
   background: rgba(255, 255, 255, 0.62);
 }
 
+.questionListSort {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 4px;
+  border: 1px solid rgba(17, 24, 39, 0.14);
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.07);
+}
+
+.questionListSortButton {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.questionListSortButton.active {
+  color: #ffffff;
+  background: #1f2937;
+  box-shadow: 0 2px 7px rgba(17, 24, 39, 0.2);
+}
+
 .questionListItem {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) 104px 118px;
+  grid-template-columns: 58px minmax(0, 1fr) 230px;
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -424,6 +451,10 @@ h2 {
 
 .questionListItem:hover {
   background: rgba(20, 124, 114, 0.08);
+}
+
+.questionListStats {
+  white-space: nowrap;
 }
 
 .problemId {
@@ -1409,7 +1440,8 @@ h2 {
     align-self: center;
   }
 
-  .statPill {
+  .questionListStats {
+    grid-column: 1 / -1;
     text-align: left;
   }
 

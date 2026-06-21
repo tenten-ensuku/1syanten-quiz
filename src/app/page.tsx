@@ -48,6 +48,7 @@ type PlaySession = {
 
 type ViewMode = "menu" | "quiz" | "timeAttackComplete";
 type MenuTab = "challenge" | "questions" | "analysis" | "ranking";
+type QuestionListSort = "default" | "weak" | "strong";
 type TileChoiceGroup = { label: string; tiles: TileId[] };
 type TypeFilterOption = {
   id: ShantenCategoryId;
@@ -207,6 +208,22 @@ function formatAverageCorrectTime(stat: QuestionStats) {
   }
 
   return formatTime(stat.totalCorrectMs / stat.correct);
+}
+
+function formatQuestionListTime(stat: QuestionStats) {
+  if (stat.correct === 0) {
+    return "未記録";
+  }
+
+  return `${(stat.totalCorrectMs / stat.correct / 1000).toFixed(1)}秒`;
+}
+
+function getCorrectRate(stat: QuestionStats) {
+  return stat.attempts === 0 ? 0 : stat.correct / stat.attempts;
+}
+
+function getAverageCorrectMs(stat: QuestionStats) {
+  return stat.correct === 0 ? Number.POSITIVE_INFINITY : stat.totalCorrectMs / stat.correct;
 }
 
 function formatRatePercent(correctCount: number, questionCount: number) {
@@ -393,6 +410,7 @@ export default function Home() {
   const [hasLoadedStats, setHasLoadedStats] = useState(false);
   const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
   const [selectedTypeFilterIds, setSelectedTypeFilterIds] = useState<string[]>([]);
+  const [questionListSort, setQuestionListSort] = useState<QuestionListSort>("default");
   const [selectedDifficulties, setSelectedDifficulties] = useState<Set<string>>(
     () => new Set(["基本", "応用"])
   );
@@ -444,6 +462,42 @@ export default function Home() {
       : -1
   ).filter((index) => index >= 0);
   const typeFilteredQuestionCount = typeFilteredQuestionIndexes.length;
+  const sortedQuestionEntries = QUIZ_QUESTIONS.map((baseQuestion, index) => ({
+    baseQuestion,
+    index,
+    stat: getStats(stats, baseQuestion.id)
+  })).sort((left, right) => {
+    if (questionListSort === "default") {
+      return left.index - right.index;
+    }
+
+    const leftAttempted = left.stat.attempts > 0;
+    const rightAttempted = right.stat.attempts > 0;
+    if (leftAttempted !== rightAttempted) {
+      return leftAttempted ? -1 : 1;
+    }
+    if (!leftAttempted && !rightAttempted) {
+      return left.index - right.index;
+    }
+
+    const rateDifference = getCorrectRate(left.stat) - getCorrectRate(right.stat);
+    if (rateDifference !== 0) {
+      return questionListSort === "weak" ? rateDifference : -rateDifference;
+    }
+
+    const leftAverageMs = getAverageCorrectMs(left.stat);
+    const rightAverageMs = getAverageCorrectMs(right.stat);
+    if (leftAverageMs !== rightAverageMs) {
+      return questionListSort === "weak"
+        ? rightAverageMs - leftAverageMs
+        : leftAverageMs - rightAverageMs;
+    }
+
+    if (left.stat.attempts !== right.stat.attempts) {
+      return right.stat.attempts - left.stat.attempts;
+    }
+    return left.index - right.index;
+  });
   const difficultyCounts = {
     基本: QUIZ_QUESTIONS.filter((question) => question.difficulty === "基本").length,
     応用: QUIZ_QUESTIONS.filter((question) => question.difficulty === "応用").length
@@ -685,9 +739,27 @@ export default function Home() {
         <h2 id="question-list-title">問題一覧</h2>
         <span className="questionCount">{QUIZ_QUESTIONS.length}種収録</span>
       </div>
+      <div className="questionListSort" aria-label="問題一覧の並び順">
+        {(
+          [
+            ["default", "通常順"],
+            ["weak", "苦手順"],
+            ["strong", "得意順"]
+          ] as const
+        ).map(([sortId, label]) => (
+          <button
+            className={questionListSort === sortId ? "questionListSortButton active" : "questionListSortButton"}
+            key={sortId}
+            type="button"
+            aria-pressed={questionListSort === sortId}
+            onClick={() => setQuestionListSort(sortId)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="questionList">
-        {QUIZ_QUESTIONS.map((baseQuestion, index) => {
-          const stat = getStats(stats, baseQuestion.id);
+        {sortedQuestionEntries.map(({ baseQuestion, index, stat }) => {
           return (
             <button
               className="questionListItem"
@@ -709,8 +781,10 @@ export default function Home() {
                   />
                 ))}
               </span>
-              <span className="statPill">正答率 {formatRate(stat)}</span>
-              <span className="statPill">平均 {formatAverageCorrectTime(stat)}</span>
+              <span className="statPill questionListStats">
+                正答率 {formatRate(stat)}（{stat.correct}/{stat.attempts}）　
+                {formatQuestionListTime(stat)}
+              </span>
             </button>
           );
         })}
