@@ -225,7 +225,7 @@ h2 {
 
 .challengeCard {
   display: grid;
-  min-height: 138px;
+  min-height: 176px;
   align-content: center;
   gap: 10px;
   padding: 18px;
@@ -264,6 +264,32 @@ h2 {
   font-size: 0.85rem;
   font-weight: 900;
   opacity: 0.74;
+}
+
+.challengeRecord {
+  display: grid;
+  align-self: end;
+  gap: 2px;
+  padding-top: 10px;
+  border-top: 1px solid currentColor;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  opacity: 0.9;
+}
+
+.challengeRecord small {
+  font-size: 0.7rem;
+  font-weight: 800;
+  opacity: 0.72;
+}
+
+.challengeRecord strong {
+  font-size: 1rem;
+  font-weight: 1000;
+}
+
+.challengeRecord span {
+  font-weight: 800;
 }
 
 .typeChallengePanel {
@@ -1578,7 +1604,7 @@ h2 {
   }
 
   .challengeCard {
-    min-height: 112px;
+    min-height: 160px;
   }
 
   .questionListItem {

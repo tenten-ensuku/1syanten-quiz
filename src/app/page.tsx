@@ -39,6 +39,7 @@ type SessionWrongQuestion = {
 type PlaySession = {
   mode: "single" | "timeAttack";
   label?: string;
+  recordKey?: ChallengeRecordKey;
   order: number[];
   position: number;
   totalMs: number;
@@ -51,6 +52,17 @@ type ViewMode = "menu" | "quiz" | "timeAttackComplete";
 type MenuTab = "challenge" | "review" | "questions" | "analysis" | "ranking";
 type ReviewMode = "mistakes" | "favorites";
 type QuestionListSort = "default" | "weak" | "strong";
+type DifficultySelectionKey = "basic" | "advanced" | "both";
+type ChallengeModeKey = "random10" | "all";
+type ChallengeRecordKey = `${DifficultySelectionKey}:${ChallengeModeKey}`;
+type ChallengeRecord = {
+  rank: ResultRank;
+  score: number;
+  correctCount: number;
+  questionCount: number;
+  totalMs: number;
+};
+type ChallengeRecords = Partial<Record<ChallengeRecordKey, ChallengeRecord>>;
 type TileChoiceGroup = { label: string; tiles: TileId[] };
 type TypeFilterOption = {
   id: ShantenCategoryId;
@@ -61,6 +73,7 @@ type TypeFilterOption = {
 
 const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
 const FAVORITES_STORAGE_KEY = "iishanten-quiz-favorites-v1";
+const CHALLENGE_RECORDS_STORAGE_KEY = "iishanten-quiz-challenge-records-v1";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 type ExplanationAsset = {
@@ -201,6 +214,50 @@ function loadFavorites(): string[] {
   } catch {
     return [];
   }
+}
+
+function loadChallengeRecords(): ChallengeRecords {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const rawRecords = window.localStorage.getItem(CHALLENGE_RECORDS_STORAGE_KEY);
+    return rawRecords ? (JSON.parse(rawRecords) as ChallengeRecords) : {};
+  } catch {
+    return {};
+  }
+}
+
+function getDifficultySelectionKey(
+  selectedDifficulties: Set<string>
+): DifficultySelectionKey | null {
+  const hasBasic = selectedDifficulties.has("基本");
+  const hasAdvanced = selectedDifficulties.has("応用");
+
+  if (hasBasic && hasAdvanced) {
+    return "both";
+  }
+  if (hasBasic) {
+    return "basic";
+  }
+  if (hasAdvanced) {
+    return "advanced";
+  }
+  return null;
+}
+
+function isBetterChallengeRecord(candidate: ChallengeRecord, current?: ChallengeRecord) {
+  if (!current) {
+    return true;
+  }
+  if (candidate.score !== current.score) {
+    return candidate.score > current.score;
+  }
+  if (candidate.correctCount !== current.correctCount) {
+    return candidate.correctCount > current.correctCount;
+  }
+  return candidate.totalMs < current.totalMs;
 }
 
 function getStats(stats: StatsByQuestion, questionId: string): QuestionStats {
@@ -433,6 +490,8 @@ export default function Home() {
   const [hasLoadedStats, setHasLoadedStats] = useState(false);
   const [favoriteQuestionIds, setFavoriteQuestionIds] = useState<string[]>([]);
   const [hasLoadedFavorites, setHasLoadedFavorites] = useState(false);
+  const [challengeRecords, setChallengeRecords] = useState<ChallengeRecords>({});
+  const [hasLoadedChallengeRecords, setHasLoadedChallengeRecords] = useState(false);
   const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
   const [selectedTypeFilterIds, setSelectedTypeFilterIds] = useState<string[]>([]);
   const [questionListSort, setQuestionListSort] = useState<QuestionListSort>("default");
@@ -447,6 +506,8 @@ export default function Home() {
     setHasLoadedStats(true);
     setFavoriteQuestionIds(loadFavorites());
     setHasLoadedFavorites(true);
+    setChallengeRecords(loadChallengeRecords());
+    setHasLoadedChallengeRecords(true);
   }, []);
 
   useEffect(() => {
@@ -463,6 +524,15 @@ export default function Home() {
       );
     }
   }, [favoriteQuestionIds, hasLoadedFavorites]);
+
+  useEffect(() => {
+    if (hasLoadedChallengeRecords) {
+      window.localStorage.setItem(
+        CHALLENGE_RECORDS_STORAGE_KEY,
+        JSON.stringify(challengeRecords)
+      );
+    }
+  }, [challengeRecords, hasLoadedChallengeRecords]);
 
   const correctShantenCategoryId = getShantenCategoryId(question.shantenTypes);
   const isTileAnswerCorrect = isSameTileSet(selectedTiles, question.answers);
@@ -496,6 +566,15 @@ export default function Home() {
       : -1
   ).filter((index) => index >= 0);
   const typeFilteredQuestionCount = typeFilteredQuestionIndexes.length;
+  const difficultySelectionKey = getDifficultySelectionKey(selectedDifficulties);
+  const randomRecordKey = difficultySelectionKey
+    ? (`${difficultySelectionKey}:random10` as ChallengeRecordKey)
+    : null;
+  const allRecordKey = difficultySelectionKey
+    ? (`${difficultySelectionKey}:all` as ChallengeRecordKey)
+    : null;
+  const randomRecord = randomRecordKey ? challengeRecords[randomRecordKey] : undefined;
+  const allRecord = allRecordKey ? challengeRecords[allRecordKey] : undefined;
   const sortedQuestionEntries = QUIZ_QUESTIONS.map((baseQuestion, index) => ({
     baseQuestion,
     index,
@@ -550,6 +629,9 @@ export default function Home() {
     setSelectedDifficulties((current) => {
       const next = new Set(current);
       if (next.has(difficulty)) {
+        if (next.size === 1) {
+          return current;
+        }
         next.delete(difficulty);
       } else {
         next.add(difficulty);
@@ -591,10 +673,15 @@ export default function Home() {
     setViewMode("quiz");
   };
 
-  const startQuestionSet = (order: number[], label: string) => {
+  const startQuestionSet = (
+    order: number[],
+    label: string,
+    recordKey?: ChallengeRecordKey
+  ) => {
     setSession({
       mode: "timeAttack",
       label,
+      recordKey,
       order,
       position: 0,
       totalMs: 0,
@@ -607,11 +694,15 @@ export default function Home() {
   };
 
   const startTimeAttack = () => {
-    startQuestionSet(createShuffledIndexes(challengeQuestionIndexes, 10), "10問ランダム");
+    startQuestionSet(
+      createShuffledIndexes(challengeQuestionIndexes, 10),
+      "10問ランダム",
+      randomRecordKey ?? undefined
+    );
   };
 
   const startAllQuestions = () => {
-    startQuestionSet(challengeQuestionIndexes, "全問");
+    startQuestionSet(challengeQuestionIndexes, "全問", allRecordKey ?? undefined);
   };
 
   const toggleTypeFilter = (filterId: string) => {
@@ -771,6 +862,28 @@ export default function Home() {
     const nextPosition = session.position + 1;
 
     if (nextPosition >= session.order.length) {
+      if (session.recordKey) {
+        const recordKey = session.recordKey;
+        const questionCount = session.order.length;
+        const mistakeCount = Math.max(0, session.answeredCount - session.correctCount);
+        const candidateRecord: ChallengeRecord = {
+          rank: rankForResult(questionCount, session.correctCount, session.totalMs),
+          score: calculateScore(
+            questionCount,
+            session.correctCount,
+            mistakeCount,
+            session.totalMs
+          ),
+          correctCount: session.correctCount,
+          questionCount,
+          totalMs: session.totalMs
+        };
+        setChallengeRecords((current) =>
+          isBetterChallengeRecord(candidateRecord, current[recordKey])
+            ? { ...current, [recordKey]: candidateRecord }
+            : current
+        );
+      }
       setViewMode("timeAttackComplete");
       setQuestionStartedAt(null);
       return;
@@ -795,7 +908,11 @@ export default function Home() {
       return;
     }
 
-    startQuestionSet(createShuffledIndexes(session.order), session.label ?? "もう一度");
+    startQuestionSet(
+      createShuffledIndexes(session.order),
+      session.label ?? "もう一度",
+      session.recordKey
+    );
   };
 
   const renderQuestionList = () => (
@@ -1003,6 +1120,22 @@ export default function Home() {
           >
             <span className="challengeLabel">10問ランダム</span>
             <span className="challengeMeta">回答中のみ計時</span>
+            <span className="challengeRecord">
+              <small>自己記録</small>
+              {randomRecord ? (
+                <>
+                  <strong>
+                    {randomRecord.rank}　{randomRecord.score}pt
+                  </strong>
+                  <span>
+                    {randomRecord.correctCount}/{randomRecord.questionCount}　平均
+                    {formatTime(randomRecord.totalMs / randomRecord.questionCount)}
+                  </span>
+                </>
+              ) : (
+                <strong>－</strong>
+              )}
+            </span>
           </button>
           <button
             className="challengeCard"
@@ -1012,6 +1145,22 @@ export default function Home() {
           >
             <span className="challengeLabel">全問</span>
             <span className="challengeMeta">{challengeQuestionIndexes.length}種を通しで挑戦</span>
+            <span className="challengeRecord">
+              <small>自己記録</small>
+              {allRecord ? (
+                <>
+                  <strong>
+                    {allRecord.rank}　{allRecord.score}pt
+                  </strong>
+                  <span>
+                    {allRecord.correctCount}/{allRecord.questionCount}　平均
+                    {formatTime(allRecord.totalMs / allRecord.questionCount)}
+                  </span>
+                </>
+              ) : (
+                <strong>－</strong>
+              )}
+            </span>
           </button>
         </div>
         <div className="typeChallengePanel">
