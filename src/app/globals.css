@@ -142,7 +142,7 @@ h2 {
 
 .menuTabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1px;
   padding: 6px;
   background: #111827;
@@ -416,6 +416,44 @@ h2 {
   border: 1px solid rgba(17, 24, 39, 0.14);
   border-radius: 8px;
   background: rgba(17, 24, 39, 0.07);
+}
+
+.reviewModeSelector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 10px;
+  padding: 4px;
+  border: 1px solid rgba(17, 24, 39, 0.14);
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.07);
+}
+
+.reviewModeButton {
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.reviewModeButton.active {
+  color: #ffffff;
+  background: #1f2937;
+  box-shadow: 0 2px 7px rgba(17, 24, 39, 0.2);
+}
+
+.reviewEmpty {
+  margin-bottom: 0;
+  padding: 20px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.55);
+  text-align: center;
+  font-weight: 800;
 }
 
 .questionListSortButton {
@@ -1479,14 +1517,15 @@ h2 {
   }
 
   .menuTabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     padding: 4px;
   }
 
   .menuTab {
     min-height: 42px;
     border-radius: 12px;
-    font-size: 0.86rem;
+    padding-inline: 2px;
+    font-size: 0.72rem;
   }
 
   .menuSection {

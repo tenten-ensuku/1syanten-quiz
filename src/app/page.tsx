@@ -47,7 +47,8 @@ type PlaySession = {
 };
 
 type ViewMode = "menu" | "quiz" | "timeAttackComplete";
-type MenuTab = "challenge" | "questions" | "analysis" | "ranking";
+type MenuTab = "challenge" | "review" | "questions" | "analysis" | "ranking";
+type ReviewMode = "mistakes" | "favorites";
 type QuestionListSort = "default" | "weak" | "strong";
 type TileChoiceGroup = { label: string; tiles: TileId[] };
 type TypeFilterOption = {
@@ -101,6 +102,7 @@ const TILE_GROUPS: TileChoiceGroup[] = [
 
 const MENU_TABS: { id: MenuTab; label: string }[] = [
   { id: "challenge", label: "挑戦" },
+  { id: "review", label: "復習" },
   { id: "questions", label: "問題一覧" },
   { id: "analysis", label: "自己分析" },
   { id: "ranking", label: "順位" }
@@ -413,6 +415,7 @@ function ExplanationText({ explanation }: { explanation: string }) {
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("menu");
   const [menuTab, setMenuTab] = useState<MenuTab>("challenge");
+  const [reviewMode, setReviewMode] = useState<ReviewMode>("mistakes");
   const [session, setSession] = useState<PlaySession | null>(null);
   const [question, setQuestion] = useState(() => createRandomVariant(QUIZ_QUESTIONS[0]));
   const [selectedTiles, setSelectedTiles] = useState<TileId[]>([]);
@@ -523,6 +526,15 @@ export default function Home() {
     }
     return left.index - right.index;
   });
+  const reviewQuestionEntries = QUIZ_QUESTIONS.map((baseQuestion, index) => ({
+    baseQuestion,
+    index,
+    stat: getStats(stats, baseQuestion.id)
+  })).filter(({ baseQuestion, stat }) =>
+    reviewMode === "mistakes"
+      ? stat.attempts - stat.correct > 0
+      : favoriteQuestionIds.includes(baseQuestion.id)
+  );
   const difficultyCounts = {
     基本: QUIZ_QUESTIONS.filter((question) => question.difficulty === "基本").length,
     応用: QUIZ_QUESTIONS.filter((question) => question.difficulty === "応用").length
@@ -835,7 +847,75 @@ export default function Home() {
     </section>
   );
 
+  const renderReview = () => (
+    <section className="menuSection" aria-labelledby="review-title">
+      <div className="sectionTitleRow">
+        <h2 id="review-title">復習</h2>
+        <span className="questionCount">{reviewQuestionEntries.length}問</span>
+      </div>
+      <div className="reviewModeSelector" aria-label="復習内容を選択">
+        <button
+          className={reviewMode === "mistakes" ? "reviewModeButton active" : "reviewModeButton"}
+          type="button"
+          aria-pressed={reviewMode === "mistakes"}
+          onClick={() => setReviewMode("mistakes")}
+        >
+          誤答履歴
+        </button>
+        <button
+          className={reviewMode === "favorites" ? "reviewModeButton active" : "reviewModeButton"}
+          type="button"
+          aria-pressed={reviewMode === "favorites"}
+          onClick={() => setReviewMode("favorites")}
+        >
+          お気に入り
+        </button>
+      </div>
+      {reviewQuestionEntries.length > 0 ? (
+        <div className="questionList">
+          {reviewQuestionEntries.map(({ baseQuestion, index, stat }) => (
+            <button
+              className="questionListItem"
+              key={`review-${baseQuestion.id}`}
+              type="button"
+              onClick={() => startSingleQuestion(index)}
+            >
+              <span className="problemId">{baseQuestion.id}</span>
+              <span
+                className="problemTiles"
+                aria-label={baseQuestion.source}
+                style={{ "--problem-tile-count": baseQuestion.hand.length } as CSSProperties}
+              >
+                {baseQuestion.hand.map((tileId, tileIndex) => (
+                  <TileView
+                    key={`review-${baseQuestion.id}-${tileId}-${tileIndex}`}
+                    tileId={tileId}
+                    compact
+                  />
+                ))}
+              </span>
+              <span className="statPill questionListStats">
+                正答率 {formatRate(stat)}（{stat.correct}/{stat.attempts}）　
+                {formatQuestionListTime(stat)}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="reviewEmpty">
+          {reviewMode === "mistakes"
+            ? "誤答した問題はまだありません。"
+            : "お気に入りに追加した問題はまだありません。"}
+        </p>
+      )}
+    </section>
+  );
+
   const renderMenuContent = () => {
+    if (menuTab === "review") {
+      return renderReview();
+    }
+
     if (menuTab === "questions") {
       return renderQuestionList();
     }
