@@ -1523,7 +1523,7 @@ export default function Home() {
 
           {rankingCategory === "effort" ? (
             <p className="rankingDescription">
-              正答数は実力ではなく、積み重ねた努力の記録です。
+              正答数は、積み重ねた努力の記録です。
             </p>
           ) : (
             <p className="rankingDescription">
