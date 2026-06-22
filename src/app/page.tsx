@@ -209,7 +209,7 @@ function getStats(stats: StatsByQuestion, questionId: string): QuestionStats {
 
 function formatRate(stat: QuestionStats) {
   if (stat.attempts === 0) {
-    return "未挑戦";
+    return "－";
   }
 
   return `${Math.round((stat.correct / stat.attempts) * 100)}%`;
@@ -221,7 +221,7 @@ function formatTime(ms: number) {
 
 function formatAverageCorrectTime(stat: QuestionStats) {
   if (stat.correct === 0) {
-    return "未記録";
+    return "－";
   }
 
   return formatTime(stat.totalCorrectMs / stat.correct);
@@ -229,7 +229,7 @@ function formatAverageCorrectTime(stat: QuestionStats) {
 
 function formatQuestionListTime(stat: QuestionStats) {
   if (stat.correct === 0) {
-    return "未記録";
+    return "－";
   }
 
   return `${(stat.totalCorrectMs / stat.correct / 1000).toFixed(1)}秒`;
@@ -474,8 +474,8 @@ export default function Home() {
   const totalAttempts = statValues.reduce((sum, stat) => sum + stat.attempts, 0);
   const totalCorrect = statValues.reduce((sum, stat) => sum + stat.correct, 0);
   const totalCorrectMs = statValues.reduce((sum, stat) => sum + stat.totalCorrectMs, 0);
-  const overallRate = totalAttempts > 0 ? `${Math.round((totalCorrect / totalAttempts) * 100)}%` : "未挑戦";
-  const overallAverage = totalCorrect > 0 ? formatTime(totalCorrectMs / totalCorrect) : "未記録";
+  const overallRate = totalAttempts > 0 ? `${Math.round((totalCorrect / totalAttempts) * 100)}%` : "－";
+  const overallAverage = totalCorrect > 0 ? formatTime(totalCorrectMs / totalCorrect) : "－";
   const selectedTypeSet = new Set(
     TYPE_FILTER_OPTIONS.filter((option) => selectedTypeFilterIds.includes(option.id)).flatMap(
       (option) => option.types
