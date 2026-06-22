@@ -646,6 +646,12 @@ export default function Home() {
   }, [hasLoadedSettings, settings]);
 
   useEffect(() => {
+    if (viewMode === "timeAttackComplete") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
     if (menuTab !== "ranking") {
       return;
     }
