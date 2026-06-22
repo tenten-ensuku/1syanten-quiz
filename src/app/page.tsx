@@ -585,6 +585,16 @@ export default function Home() {
     setHasSubmitted(false);
   };
 
+  const returnToChallengeMenu = () => {
+    setMenuTab("challenge");
+    returnToMenu();
+  };
+
+  const returnToQuestionList = () => {
+    setMenuTab("questions");
+    returnToMenu();
+  };
+
   const handleSelect = (tileId: TileId) => {
     if (hasSubmitted || blockedTiles.has(tileId)) {
       return;
@@ -1097,22 +1107,6 @@ export default function Home() {
 
   const renderQuiz = () => (
     <>
-      <section className="quizHeader" aria-labelledby="app-title">
-        <div className="titleRow">
-          <h1 id="app-title">一向聴の受け入れテスト</h1>
-          <span className="versionBadge">{APP_VERSION}</span>
-        </div>
-        <div className="playMeta">
-          <span>{session?.mode === "timeAttack" ? session.label ?? "10問ランダム" : "問題一覧"}</span>
-          {session?.mode === "timeAttack" && (
-            <span>回答中のみ計時: {formatTime(session.totalMs)}</span>
-          )}
-          <button className="menuBackButton" type="button" onClick={returnToMenu}>
-            メニューへ
-          </button>
-        </div>
-      </section>
-
       <section className="panel questionPanel" aria-labelledby="question-title">
         <div className="sectionTitleRow">
           <h2 id="question-title">問題 {question.id}</h2>
@@ -1263,12 +1257,13 @@ export default function Home() {
             <ExplanationText explanation={question.explanation} />
           </div>
 
-          {session?.mode === "timeAttack" ? (
-            <button className="nextButton" type="button" onClick={handleNext}>
-              {session.position + 1 >= session.order.length ? "結果を見る" : "次の問題"}
-            </button>
-          ) : (
-            <div className="resultNavigation">
+          <div className="resultNavigation">
+            {session?.mode === "timeAttack" ? (
+              <button className="nextButton" type="button" onClick={handleNext}>
+                {session.position + 1 >= session.order.length ? "結果を見る" : "次の問題"}
+              </button>
+            ) : (
+              <>
               <button
                 className="nextButton"
                 type="button"
@@ -1277,18 +1272,22 @@ export default function Home() {
               >
                 次の問題へ
               </button>
-              <button className="listReturnButton" type="button" onClick={returnToMenu}>
+              <button className="listReturnButton" type="button" onClick={returnToQuestionList}>
                 問題一覧へ
               </button>
-            </div>
-          )}
+              </>
+            )}
+            <button className="listReturnButton" type="button" onClick={returnToChallengeMenu}>
+              メニューへ
+            </button>
+          </div>
         </section>
       )}
     </>
   );
 
   return (
-    <main className="appShell">
+    <main className={viewMode === "quiz" ? "appShell quizMode" : "appShell"}>
       {viewMode === "menu" && renderMenu()}
       {viewMode === "quiz" && renderQuiz()}
       {viewMode === "timeAttackComplete" && renderTimeAttackComplete()}

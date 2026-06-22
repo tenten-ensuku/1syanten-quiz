@@ -53,6 +53,10 @@ button {
   padding: 32px 0 48px;
 }
 
+.appShell.quizMode {
+  padding-top: 8px;
+}
+
 .quizHeader {
   margin-bottom: 24px;
 }
@@ -1051,9 +1055,16 @@ h2 {
 }
 
 .resultNavigation {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   gap: 10px;
+  width: 100%;
+}
+
+.resultNavigation .nextButton,
+.resultNavigation .listReturnButton {
+  width: 100%;
+  padding-inline: 10px;
 }
 
 .listReturnButton {
@@ -1414,6 +1425,10 @@ h2 {
   .appShell {
     width: min(100% - 20px, 1080px);
     padding-top: 20px;
+  }
+
+  .appShell.quizMode {
+    padding-top: 4px;
   }
 
   .panel {
