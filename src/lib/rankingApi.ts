@@ -18,6 +18,12 @@ export type RankingSubmission = {
   client_version: string;
 };
 
+export type PendingDailyEffort = {
+  correctCount: number;
+  answerCount: number;
+  totalMs: number;
+};
+
 export type EffortRankingRow = {
   device_id: string;
   player_name: string;
@@ -55,6 +61,13 @@ function getJstDateParts(date = new Date()) {
     month: Number(values.month),
     day: Number(values.day)
   };
+}
+
+export function getJstDateKey(date = new Date()) {
+  const parts = getJstDateParts(date);
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(
+    parts.day
+  ).padStart(2, "0")}`;
 }
 
 function getPeriodKey(period: RankingPeriod) {
@@ -101,6 +114,34 @@ export async function submitRankingResult(payload: RankingSubmission) {
       Prefer: "return=minimal,resolution=ignore-duplicates"
     },
     body: JSON.stringify(payload)
+  });
+}
+
+export async function submitDailyEffortEvent(
+  eventId: string,
+  deviceId: string,
+  playerName: string,
+  activityDate: string,
+  pending: PendingDailyEffort
+) {
+  if (pending.answerCount === 0) {
+    return;
+  }
+
+  await supabaseRequest("iishanten_effort_events", {
+    method: "POST",
+    headers: {
+      Prefer: "return=minimal,resolution=ignore-duplicates"
+    },
+    body: JSON.stringify({
+      event_id: eventId,
+      device_id: deviceId,
+      activity_date: activityDate,
+      player_name: playerName,
+      correct_count: pending.correctCount,
+      answer_count: pending.answerCount,
+      elapsed_seconds: Number((pending.totalMs / 1000).toFixed(2))
+    })
   });
 }
 

@@ -22,8 +22,11 @@ import {
   type RankingChallengeMode,
   type RankingDifficulty,
   type RankingPeriod,
+  type PendingDailyEffort,
   fetchEffortRankings,
   fetchRankRankings,
+  getJstDateKey,
+  submitDailyEffortEvent,
   submitRankingResult
 } from "@/lib/rankingApi";
 
@@ -83,6 +86,7 @@ type AppSettings = {
   volume: number;
   slideTouchEnabled: boolean;
 };
+type PendingDailyEffortByDate = Record<string, PendingDailyEffort>;
 type TileChoiceGroup = { label: string; tiles: TileId[] };
 type TypeFilterOption = {
   id: ShantenCategoryId;
@@ -96,12 +100,14 @@ const FAVORITES_STORAGE_KEY = "iishanten-quiz-favorites-v1";
 const CHALLENGE_RECORDS_STORAGE_KEY = "iishanten-quiz-challenge-records-v1";
 const SETTINGS_STORAGE_KEY = "iishanten-quiz-settings-v1";
 const DEVICE_ID_STORAGE_KEY = "iishanten-quiz-device-id-v1";
+const PENDING_DAILY_EFFORT_STORAGE_KEY = "iishanten-quiz-pending-daily-effort-v1";
 const BACKUP_STORAGE_KEYS = [
   STATS_STORAGE_KEY,
   FAVORITES_STORAGE_KEY,
   CHALLENGE_RECORDS_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
-  DEVICE_ID_STORAGE_KEY
+  DEVICE_ID_STORAGE_KEY,
+  PENDING_DAILY_EFFORT_STORAGE_KEY
 ] as const;
 const DEFAULT_SETTINGS: AppSettings = {
   nickname: "",
@@ -285,6 +291,19 @@ function loadSettings(): AppSettings {
     };
   } catch {
     return DEFAULT_SETTINGS;
+  }
+}
+
+function loadPendingDailyEffort(): PendingDailyEffortByDate {
+  if (typeof window === "undefined") {
+    return {};
+  }
+  try {
+    return JSON.parse(
+      window.localStorage.getItem(PENDING_DAILY_EFFORT_STORAGE_KEY) ?? "{}"
+    ) as PendingDailyEffortByDate;
+  } catch {
+    return {};
   }
 }
 
@@ -582,6 +601,10 @@ export default function Home() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [backupStatus, setBackupStatus] = useState("");
+  const [pendingDailyEffort, setPendingDailyEffort] =
+    useState<PendingDailyEffortByDate>({});
+  const [hasLoadedPendingDailyEffort, setHasLoadedPendingDailyEffort] =
+    useState(false);
   const [rankingCategory, setRankingCategory] =
     useState<RankingCategory>("effort");
   const [rankingPeriod, setRankingPeriod] = useState<RankingPeriod>("daily");
@@ -612,6 +635,8 @@ export default function Home() {
     setSettings(loadedSettings);
     setAudioVolume(loadedSettings.volume);
     setHasLoadedSettings(true);
+    setPendingDailyEffort(loadPendingDailyEffort());
+    setHasLoadedPendingDailyEffort(true);
   }, []);
 
   useEffect(() => {
@@ -644,6 +669,15 @@ export default function Home() {
       setAudioVolume(settings.volume);
     }
   }, [hasLoadedSettings, settings]);
+
+  useEffect(() => {
+    if (hasLoadedPendingDailyEffort) {
+      window.localStorage.setItem(
+        PENDING_DAILY_EFFORT_STORAGE_KEY,
+        JSON.stringify(pendingDailyEffort)
+      );
+    }
+  }, [hasLoadedPendingDailyEffort, pendingDailyEffort]);
 
   useEffect(() => {
     if (viewMode === "timeAttackComplete") {
@@ -1027,6 +1061,7 @@ export default function Home() {
       setStats(loadStats());
       setFavoriteQuestionIds(loadFavorites());
       setChallengeRecords(loadChallengeRecords());
+      setPendingDailyEffort(loadPendingDailyEffort());
       const restoredSettings = loadSettings();
       setSettings(restoredSettings);
       setAudioVolume(restoredSettings.volume);
@@ -1066,6 +1101,22 @@ export default function Home() {
           attempts: previous.attempts + 1,
           correct: previous.correct + (correct ? 1 : 0),
           totalCorrectMs: previous.totalCorrectMs + (correct ? answerMs : 0)
+        }
+      };
+    });
+    const activityDate = getJstDateKey();
+    setPendingDailyEffort((current) => {
+      const previous = current[activityDate] ?? {
+        correctCount: 0,
+        answerCount: 0,
+        totalMs: 0
+      };
+      return {
+        ...current,
+        [activityDate]: {
+          correctCount: previous.correctCount + (correct ? 1 : 0),
+          answerCount: previous.answerCount + 1,
+          totalMs: previous.totalMs + answerMs
         }
       };
     });
@@ -1189,10 +1240,17 @@ export default function Home() {
 
     setRankingSubmitStatus("送信中...");
     try {
+      const deviceId = getDeviceId();
+      const activityDate = getJstDateKey();
+      const pendingEffort = pendingDailyEffort[activityDate] ?? {
+        correctCount: 0,
+        answerCount: 0,
+        totalMs: 0
+      };
       await submitRankingResult({
         run_id: session.runId,
         player_name: nickname,
-        device_id: getDeviceId(),
+        device_id: deviceId,
         difficulty_mode: session.difficultyMode ?? "both",
         challenge_mode: session.challengeMode ?? "type_filtered",
         rank,
@@ -1203,6 +1261,21 @@ export default function Home() {
         average_seconds: Number((session.totalMs / questionCount / 1000).toFixed(2)),
         client_version: APP_VERSION
       });
+      await submitDailyEffortEvent(
+        session.runId,
+        deviceId,
+        nickname,
+        activityDate,
+        pendingEffort
+      );
+      setPendingDailyEffort((current) => ({
+        ...current,
+        [activityDate]: {
+          correctCount: 0,
+          answerCount: 0,
+          totalMs: 0
+        }
+      }));
       setSubmittedRunId(session.runId);
       setRankingSubmitStatus("ランキングへ送信しました。");
     } catch (error) {
