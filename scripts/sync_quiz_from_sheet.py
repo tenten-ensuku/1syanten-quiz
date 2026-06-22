@@ -35,7 +35,7 @@ GROUP_LABELS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧"]
 
 QUESTION_PATTERN = re.compile(
     r'createQuestion\(\s*"([^"]+)",\s*"([^"]+)",\s*\[(.*?)\],\s*'
-    r'"((?:\\.|[^"])*)",\s*\[(.*?)\]\s*\)',
+    r'"((?:\\.|[^"])*)",\s*\[(.*?)\],\s*"([^"]+)"\s*\)',
     re.S,
 )
 
@@ -115,6 +115,10 @@ def make_question_id(index: int) -> str:
 
 def resolve_types(row_number: int, source: str, row: dict[str, str]) -> list[str]:
     types = [column for column in TYPE_COLUMNS if row.get(column) == "TRUE"]
+
+    # Explicit correction: sheet row 67 is judged as headless type 1.
+    if row_number == 67 and source == "223334678m1122p":
+        return ["ヘッドレス1型"]
 
     # EX-20 is explicitly explained through both headless and extra-tile views.
     if row_number == 93 and source == "23345667m56778s":

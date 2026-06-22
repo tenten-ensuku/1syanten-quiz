@@ -1173,7 +1173,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       "3p"
     ],
     "完全形。2233344ｍが6枚形。ターツが面子化する受け入れ（面子が増える受け入れ）を答えればOK。",
-    ["完全形"],
+    ["ヘッドレス1型"],
     "基本"
   ),
   createQuestion(
