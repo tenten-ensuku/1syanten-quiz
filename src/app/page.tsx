@@ -1087,7 +1087,6 @@ export default function Home() {
     const averageMs = questionCount > 0 ? totalMs / questionCount : 0;
     const score = calculateScore(questionCount, correctCount, mistakeCount, totalMs);
     const rank = rankForResult(questionCount, correctCount, totalMs);
-    const scoreProgress = Math.min(1, score / Math.max(1, questionCount * 30));
     const wrongQuestions = session?.wrongQuestions ?? [];
 
     return (
@@ -1101,17 +1100,20 @@ export default function Home() {
         </div>
 
         <div className="scoreCard" aria-label={`ランク ${rank}、${score}点`}>
-          <div
-            className="scoreGauge"
-            style={{ "--score-progress": `${scoreProgress * 360}deg` } as CSSProperties}
-          >
-            <div className="scoreGaugeCenter">
+          <div className="rankDisplay">
+            {rank === "神" ? (
+              <img
+                className="godRankImage"
+                src={`${BASE_PATH}/god-rank.png`}
+                alt="神"
+              />
+            ) : (
               <span className={`rankBadgeResult ${rankClassName(rank)}`}>{rank}</span>
-              <strong>
-                {score}
-                <small>pt</small>
-              </strong>
-            </div>
+            )}
+            <strong className="scoreNumber">
+              {score}
+              <small>pt</small>
+            </strong>
           </div>
           <p className="rankComment">{rankComment(rank)}</p>
         </div>
