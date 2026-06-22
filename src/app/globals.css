@@ -796,7 +796,7 @@ h2 {
 
 .tileChoice.answer::after {
   opacity: 1;
-  background: rgba(38, 176, 93, 0.24);
+  background: transparent;
   box-shadow: inset 0 0 0 3px var(--correct);
 }
 
@@ -810,7 +810,7 @@ h2 {
 
 .tileChoice.incorrect::after {
   opacity: 1;
-  background: rgba(220, 57, 45, 0.3);
+  background: transparent;
   box-shadow: inset 0 0 0 3px var(--incorrect);
 }
 
