@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type ChangeEvent,
   type CSSProperties,
   type PointerEvent,
   useEffect,
@@ -11,7 +12,7 @@ import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
 import { APP_VERSION } from "@/lib/appVersion";
-import { playTone } from "@/lib/audioTones";
+import { playTone, setAudioVolume } from "@/lib/audioTones";
 import { HONOR_TILE_IDS, QUIZ_QUESTIONS, ShantenType, TileId } from "@/lib/quizData";
 import { createRandomVariant } from "@/lib/quizTransforms";
 
@@ -49,7 +50,7 @@ type PlaySession = {
 };
 
 type ViewMode = "menu" | "quiz" | "timeAttackComplete";
-type MenuTab = "challenge" | "review" | "questions" | "analysis" | "ranking";
+type MenuTab = "challenge" | "review" | "questions" | "analysis" | "ranking" | "settings";
 type ReviewMode = "mistakes" | "favorites";
 type QuestionListSort = "default" | "weak" | "strong";
 type DifficultySelectionKey = "basic" | "advanced" | "both";
@@ -63,6 +64,11 @@ type ChallengeRecord = {
   totalMs: number;
 };
 type ChallengeRecords = Partial<Record<ChallengeRecordKey, ChallengeRecord>>;
+type AppSettings = {
+  nickname: string;
+  volume: number;
+  slideTouchEnabled: boolean;
+};
 type TileChoiceGroup = { label: string; tiles: TileId[] };
 type TypeFilterOption = {
   id: ShantenCategoryId;
@@ -74,6 +80,18 @@ type TypeFilterOption = {
 const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
 const FAVORITES_STORAGE_KEY = "iishanten-quiz-favorites-v1";
 const CHALLENGE_RECORDS_STORAGE_KEY = "iishanten-quiz-challenge-records-v1";
+const SETTINGS_STORAGE_KEY = "iishanten-quiz-settings-v1";
+const BACKUP_STORAGE_KEYS = [
+  STATS_STORAGE_KEY,
+  FAVORITES_STORAGE_KEY,
+  CHALLENGE_RECORDS_STORAGE_KEY,
+  SETTINGS_STORAGE_KEY
+] as const;
+const DEFAULT_SETTINGS: AppSettings = {
+  nickname: "",
+  volume: 3,
+  slideTouchEnabled: true
+};
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 type ExplanationAsset = {
@@ -227,6 +245,35 @@ function loadChallengeRecords(): ChallengeRecords {
   } catch {
     return {};
   }
+}
+
+function loadSettings(): AppSettings {
+  if (typeof window === "undefined") {
+    return DEFAULT_SETTINGS;
+  }
+
+  try {
+    const parsed = JSON.parse(
+      window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? "{}"
+    ) as Partial<AppSettings>;
+    return {
+      nickname: typeof parsed.nickname === "string" ? parsed.nickname.slice(0, 12) : "",
+      volume:
+        typeof parsed.volume === "number"
+          ? Math.max(0, Math.min(3, parsed.volume))
+          : DEFAULT_SETTINGS.volume,
+      slideTouchEnabled:
+        typeof parsed.slideTouchEnabled === "boolean"
+          ? parsed.slideTouchEnabled
+          : DEFAULT_SETTINGS.slideTouchEnabled
+    };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+function sanitizeNickname(value: string) {
+  return value.replace(/[<>"'`/\\\u0000-\u001f\u007f]/g, "").slice(0, 12);
 }
 
 function getDifficultySelectionKey(
@@ -492,6 +539,9 @@ export default function Home() {
   const [hasLoadedFavorites, setHasLoadedFavorites] = useState(false);
   const [challengeRecords, setChallengeRecords] = useState<ChallengeRecords>({});
   const [hasLoadedChallengeRecords, setHasLoadedChallengeRecords] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
+  const [backupStatus, setBackupStatus] = useState("");
   const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
   const [selectedTypeFilterIds, setSelectedTypeFilterIds] = useState<string[]>([]);
   const [questionListSort, setQuestionListSort] = useState<QuestionListSort>("default");
@@ -500,6 +550,7 @@ export default function Home() {
   );
   const isPointerSelectingRef = useRef(false);
   const pointerSelectedTilesRef = useRef(new Set<TileId>());
+  const restoreFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setStats(loadStats());
@@ -508,6 +559,10 @@ export default function Home() {
     setHasLoadedFavorites(true);
     setChallengeRecords(loadChallengeRecords());
     setHasLoadedChallengeRecords(true);
+    const loadedSettings = loadSettings();
+    setSettings(loadedSettings);
+    setAudioVolume(loadedSettings.volume);
+    setHasLoadedSettings(true);
   }, []);
 
   useEffect(() => {
@@ -533,6 +588,13 @@ export default function Home() {
       );
     }
   }, [challengeRecords, hasLoadedChallengeRecords]);
+
+  useEffect(() => {
+    if (hasLoadedSettings) {
+      window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      setAudioVolume(settings.volume);
+    }
+  }, [hasLoadedSettings, settings]);
 
   const correctShantenCategoryId = getShantenCategoryId(question.shantenTypes);
   const isTileAnswerCorrect = isSameTileSet(selectedTiles, question.answers);
@@ -771,13 +833,17 @@ export default function Home() {
     }
 
     event.preventDefault();
+    if (!settings.slideTouchEnabled) {
+      handleSelect(tileId);
+      return;
+    }
     isPointerSelectingRef.current = true;
     pointerSelectedTilesRef.current = new Set<TileId>();
     pushTileDuringPointerSelect(tileId);
   };
 
   const handlePointerSelectMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!isPointerSelectingRef.current || hasSubmitted) {
+    if (!settings.slideTouchEnabled || !isPointerSelectingRef.current || hasSubmitted) {
       return;
     }
 
@@ -789,6 +855,73 @@ export default function Home() {
     if (tileId) {
       event.preventDefault();
       pushTileDuringPointerSelect(tileId);
+    }
+  };
+
+  const downloadBackup = () => {
+    const data = Object.fromEntries(
+      BACKUP_STORAGE_KEYS.flatMap((key) => {
+        const value = window.localStorage.getItem(key);
+        return value === null ? [] : [[key, value]];
+      })
+    );
+    const payload = JSON.stringify(
+      {
+        app: "1syanten-quiz",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        data
+      },
+      null,
+      2
+    );
+    const blob = new Blob([payload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+    anchor.href = url;
+    anchor.download = `1syanten-quiz-backup-${stamp}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setBackupStatus("バックアップファイルを保存しました。");
+  };
+
+  const restoreBackup = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(await file.text()) as {
+        data?: Record<string, unknown>;
+      };
+      const data =
+        parsed?.data && typeof parsed.data === "object" ? parsed.data : parsed;
+      const allowedKeys = new Set<string>(BACKUP_STORAGE_KEYS);
+      const entries = Object.entries(data).filter(
+        ([key, value]) => allowedKeys.has(key) && typeof value === "string"
+      );
+      if (entries.length === 0) {
+        throw new Error("復元できるデータが見つかりませんでした。");
+      }
+
+      entries.forEach(([key, value]) => window.localStorage.setItem(key, value as string));
+      setStats(loadStats());
+      setFavoriteQuestionIds(loadFavorites());
+      setChallengeRecords(loadChallengeRecords());
+      const restoredSettings = loadSettings();
+      setSettings(restoredSettings);
+      setAudioVolume(restoredSettings.volume);
+      setBackupStatus(`${entries.length}項目を復元しました。`);
+    } catch (error) {
+      setBackupStatus(
+        error instanceof Error ? error.message : "復元に失敗しました。"
+      );
+    } finally {
+      if (restoreFileInputRef.current) {
+        restoreFileInputRef.current.value = "";
+      }
     }
   };
 
@@ -1071,6 +1204,112 @@ export default function Home() {
       );
     }
 
+    if (menuTab === "settings") {
+      return (
+        <section className="menuSection settingsSection" aria-labelledby="settings-title">
+          <div className="sectionTitleRow">
+            <h2 id="settings-title">設定</h2>
+          </div>
+
+          <div className="settingsGroup">
+            <label className="settingsLabel" htmlFor="nickname">
+              ニックネーム
+            </label>
+            <input
+              className="settingsTextInput"
+              id="nickname"
+              maxLength={12}
+              placeholder="ニックネームを入力"
+              type="text"
+              value={settings.nickname}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  nickname: sanitizeNickname(event.target.value)
+                }))
+              }
+            />
+            <p className="settingsHelp">ランキングではこの名前を使用します。</p>
+          </div>
+
+          <div className="settingsGroup">
+            <div className="settingsLabelRow">
+              <span className="settingsLabel">音量</span>
+              <strong>{settings.volume}</strong>
+            </div>
+            <input
+              className="volumeSlider"
+              aria-label="音量"
+              type="range"
+              min="0"
+              max="3"
+              step="1"
+              value={settings.volume}
+              onChange={(event) => {
+                const volume = Number(event.target.value);
+                setSettings((current) => ({ ...current, volume }));
+                setAudioVolume(volume);
+              }}
+            />
+            <div className="volumeScale" aria-hidden="true">
+              <span>0</span>
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+            </div>
+          </div>
+
+          <div className="settingsGroup settingsToggleRow">
+            <div>
+              <span className="settingsLabel">スライドタッチ</span>
+              <p className="settingsHelp">押したまま牌をなぞって選択します。</p>
+            </div>
+            <button
+              className={settings.slideTouchEnabled ? "toggleSwitch active" : "toggleSwitch"}
+              type="button"
+              role="switch"
+              aria-checked={settings.slideTouchEnabled}
+              onClick={() => {
+                playTone("tap");
+                setSettings((current) => ({
+                  ...current,
+                  slideTouchEnabled: !current.slideTouchEnabled
+                }));
+              }}
+            >
+              <span>{settings.slideTouchEnabled ? "ON" : "OFF"}</span>
+            </button>
+          </div>
+
+          <div className="settingsGroup backupGroup">
+            <span className="settingsLabel">データ引継ぎ</span>
+            <p className="settingsHelp">
+              問題成績・お気に入り・自己記録・設定をファイルでまとめて移せます。
+            </p>
+            <button className="backupButton primary" type="button" onClick={downloadBackup}>
+              バックアップファイルを保存
+            </button>
+            <input
+              ref={restoreFileInputRef}
+              id="backup-restore-file"
+              className="visuallyHidden"
+              type="file"
+              accept=".json,.txt,application/json,text/plain"
+              onChange={restoreBackup}
+            />
+            <label className="backupButton" htmlFor="backup-restore-file">
+              バックアップファイルから復元
+            </label>
+            {backupStatus ? (
+              <p className="backupStatus" role="status">
+                {backupStatus}
+              </p>
+            ) : null}
+          </div>
+        </section>
+      );
+    }
+
     if (menuTab === "ranking") {
       return (
         <section className="menuSection" aria-labelledby="ranking-title">
@@ -1207,7 +1446,22 @@ export default function Home() {
           <p className="menuEyebrow">一向聴受け入れ</p>
           <h1 id="app-title">宿題ドリル</h1>
         </div>
-        <span className="versionBadge">{APP_VERSION}</span>
+        <div className="menuTopActions">
+          <span className="versionBadge">{APP_VERSION}</span>
+          <button
+            className={menuTab === "settings" ? "settingsButton active" : "settingsButton"}
+            type="button"
+            aria-pressed={menuTab === "settings"}
+            onClick={() => {
+              playTone("tap");
+              setBackupStatus("");
+              setMenuTab(menuTab === "settings" ? "challenge" : "settings");
+            }}
+          >
+            <span className="settingsIcon" aria-hidden="true">⚙</span>
+            <span>設定</span>
+          </button>
+        </div>
       </header>
 
       <nav className="menuTabs" aria-label="メニュー">

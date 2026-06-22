@@ -8,6 +8,11 @@ type AudioWindow = Window &
 let audioContext: AudioContext | null = null;
 let audioResumePromise: Promise<void> | null = null;
 let hasQueuedInitialTone = false;
+let audioVolume = 3;
+
+export function setAudioVolume(volume: number) {
+  audioVolume = Math.max(0, Math.min(3, volume));
+}
 
 function ensureAudioContext() {
   if (typeof window === "undefined") {
@@ -34,12 +39,20 @@ function ensureAudioContext() {
 }
 
 function scheduleTone(context: AudioContext, type: AudioTone) {
+  const volumeScale = audioVolume / 3;
+  if (volumeScale <= 0) {
+    return;
+  }
+
   const now = context.currentTime;
   const oscillator = context.createOscillator();
   const gain = context.createGain();
+  const output = context.createGain();
 
   oscillator.connect(gain);
-  gain.connect(context.destination);
+  gain.connect(output);
+  output.connect(context.destination);
+  output.gain.setValueAtTime(volumeScale, now);
 
   if (type === "ok") {
     oscillator.type = "triangle";
