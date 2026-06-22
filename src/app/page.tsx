@@ -15,6 +15,17 @@ import { APP_VERSION } from "@/lib/appVersion";
 import { playTone, setAudioVolume } from "@/lib/audioTones";
 import { HONOR_TILE_IDS, QUIZ_QUESTIONS, ShantenType, TileId } from "@/lib/quizData";
 import { createRandomVariant } from "@/lib/quizTransforms";
+import {
+  type EffortRankingRow,
+  type RankRankingRow,
+  type RankingCategory,
+  type RankingChallengeMode,
+  type RankingDifficulty,
+  type RankingPeriod,
+  fetchEffortRankings,
+  fetchRankRankings,
+  submitRankingResult
+} from "@/lib/rankingApi";
 
 type QuestionStats = {
   attempts: number;
@@ -41,6 +52,9 @@ type PlaySession = {
   mode: "single" | "timeAttack";
   label?: string;
   recordKey?: ChallengeRecordKey;
+  runId: string;
+  difficultyMode?: RankingDifficulty;
+  challengeMode?: RankingChallengeMode;
   order: number[];
   position: number;
   totalMs: number;
@@ -81,11 +95,13 @@ const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
 const FAVORITES_STORAGE_KEY = "iishanten-quiz-favorites-v1";
 const CHALLENGE_RECORDS_STORAGE_KEY = "iishanten-quiz-challenge-records-v1";
 const SETTINGS_STORAGE_KEY = "iishanten-quiz-settings-v1";
+const DEVICE_ID_STORAGE_KEY = "iishanten-quiz-device-id-v1";
 const BACKUP_STORAGE_KEYS = [
   STATS_STORAGE_KEY,
   FAVORITES_STORAGE_KEY,
   CHALLENGE_RECORDS_STORAGE_KEY,
-  SETTINGS_STORAGE_KEY
+  SETTINGS_STORAGE_KEY,
+  DEVICE_ID_STORAGE_KEY
 ] as const;
 const DEFAULT_SETTINGS: AppSettings = {
   nickname: "",
@@ -274,6 +290,30 @@ function loadSettings(): AppSettings {
 
 function sanitizeNickname(value: string) {
   return value.replace(/[<>"'`/\\\u0000-\u001f\u007f]/g, "").slice(0, 12);
+}
+
+function getDeviceId() {
+  const existing = window.localStorage.getItem(DEVICE_ID_STORAGE_KEY);
+  if (existing) {
+    return existing;
+  }
+  const id = crypto.randomUUID();
+  window.localStorage.setItem(DEVICE_ID_STORAGE_KEY, id);
+  return id;
+}
+
+function createRunId() {
+  return crypto.randomUUID();
+}
+
+function difficultyLabel(mode: RankingDifficulty) {
+  if (mode === "basic") {
+    return "基本";
+  }
+  if (mode === "advanced") {
+    return "難問";
+  }
+  return "基本＋難問";
 }
 
 function getDifficultySelectionKey(
@@ -542,6 +582,15 @@ export default function Home() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [backupStatus, setBackupStatus] = useState("");
+  const [rankingCategory, setRankingCategory] =
+    useState<RankingCategory>("effort");
+  const [rankingPeriod, setRankingPeriod] = useState<RankingPeriod>("daily");
+  const [effortRankingRows, setEffortRankingRows] = useState<EffortRankingRow[]>([]);
+  const [rankRankingRows, setRankRankingRows] = useState<RankRankingRow[]>([]);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [rankingError, setRankingError] = useState("");
+  const [rankingSubmitStatus, setRankingSubmitStatus] = useState("");
+  const [submittedRunId, setSubmittedRunId] = useState<string | null>(null);
   const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
   const [selectedTypeFilterIds, setSelectedTypeFilterIds] = useState<string[]>([]);
   const [questionListSort, setQuestionListSort] = useState<QuestionListSort>("default");
@@ -595,6 +644,48 @@ export default function Home() {
       setAudioVolume(settings.volume);
     }
   }, [hasLoadedSettings, settings]);
+
+  useEffect(() => {
+    if (menuTab !== "ranking") {
+      return;
+    }
+
+    let active = true;
+    setRankingLoading(true);
+    setRankingError("");
+    const request =
+      rankingCategory === "effort"
+        ? fetchEffortRankings(rankingPeriod)
+        : fetchRankRankings(rankingPeriod);
+
+    void request
+      .then((rows) => {
+        if (!active) {
+          return;
+        }
+        if (rankingCategory === "effort") {
+          setEffortRankingRows(rows as EffortRankingRow[]);
+        } else {
+          setRankRankingRows(rows as RankRankingRow[]);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setRankingError(
+            error instanceof Error ? error.message : "ランキングを取得できませんでした。"
+          );
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setRankingLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [menuTab, rankingCategory, rankingPeriod]);
 
   const correctShantenCategoryId = getShantenCategoryId(question.shantenTypes);
   const isTileAnswerCorrect = isSameTileSet(selectedTiles, question.answers);
@@ -724,6 +815,7 @@ export default function Home() {
     setSession({
       mode: "single",
       label: "問題一覧",
+      runId: createRunId(),
       order: [baseIndex],
       position: 0,
       totalMs: 0,
@@ -738,12 +830,18 @@ export default function Home() {
   const startQuestionSet = (
     order: number[],
     label: string,
-    recordKey?: ChallengeRecordKey
+    recordKey?: ChallengeRecordKey,
+    challengeMode: RankingChallengeMode = "type_filtered"
   ) => {
+    setRankingSubmitStatus("");
+    setSubmittedRunId(null);
     setSession({
       mode: "timeAttack",
       label,
       recordKey,
+      runId: createRunId(),
+      difficultyMode: difficultySelectionKey ?? "both",
+      challengeMode,
       order,
       position: 0,
       totalMs: 0,
@@ -759,12 +857,18 @@ export default function Home() {
     startQuestionSet(
       createShuffledIndexes(challengeQuestionIndexes, 10),
       "10問ランダム",
-      randomRecordKey ?? undefined
+      randomRecordKey ?? undefined,
+      "random10"
     );
   };
 
   const startAllQuestions = () => {
-    startQuestionSet(challengeQuestionIndexes, "全問", allRecordKey ?? undefined);
+    startQuestionSet(
+      challengeQuestionIndexes,
+      "全問",
+      allRecordKey ?? undefined,
+      "all"
+    );
   };
 
   const toggleTypeFilter = (filterId: string) => {
@@ -780,7 +884,12 @@ export default function Home() {
       return;
     }
 
-    startQuestionSet(createShuffledIndexes(typeFilteredQuestionIndexes), "タイプ別出題");
+    startQuestionSet(
+      createShuffledIndexes(typeFilteredQuestionIndexes),
+      "タイプ別出題",
+      undefined,
+      "type_filtered"
+    );
   };
 
   const returnToMenu = () => {
@@ -790,6 +899,8 @@ export default function Home() {
     setSelectedTiles([]);
     setSelectedShantenCategoryId(null);
     setHasSubmitted(false);
+    setRankingSubmitStatus("");
+    setSubmittedRunId(null);
   };
 
   const returnToChallengeMenu = () => {
@@ -1044,8 +1155,53 @@ export default function Home() {
     startQuestionSet(
       createShuffledIndexes(session.order),
       session.label ?? "もう一度",
-      session.recordKey
+      session.recordKey,
+      session.challengeMode
     );
+  };
+
+  const submitCompletedResult = async () => {
+    if (!session || session.mode !== "timeAttack" || submittedRunId === session.runId) {
+      return;
+    }
+
+    const nickname = settings.nickname.trim();
+    if (!nickname) {
+      setRankingSubmitStatus("設定でニックネームを入力してください。");
+      return;
+    }
+
+    const questionCount = session.order.length;
+    const mistakeCount = Math.max(0, session.answeredCount - session.correctCount);
+    const score = calculateScore(
+      questionCount,
+      session.correctCount,
+      mistakeCount,
+      session.totalMs
+    );
+    const rank = rankForResult(questionCount, session.correctCount, session.totalMs);
+
+    setRankingSubmitStatus("送信中...");
+    try {
+      await submitRankingResult({
+        run_id: session.runId,
+        player_name: nickname,
+        device_id: getDeviceId(),
+        difficulty_mode: session.difficultyMode ?? "both",
+        challenge_mode: session.challengeMode ?? "type_filtered",
+        rank,
+        score,
+        correct_count: session.correctCount,
+        answer_count: questionCount,
+        elapsed_seconds: Number((session.totalMs / 1000).toFixed(2)),
+        average_seconds: Number((session.totalMs / questionCount / 1000).toFixed(2)),
+        client_version: APP_VERSION
+      });
+      setSubmittedRunId(session.runId);
+      setRankingSubmitStatus("ランキングへ送信しました。");
+    } catch {
+      setRankingSubmitStatus("送信に失敗しました。通信状況を確認してください。");
+    }
   };
 
   const renderQuestionList = () => (
@@ -1315,18 +1471,103 @@ export default function Home() {
         <section className="menuSection" aria-labelledby="ranking-title">
           <div className="sectionTitleRow">
             <h2 id="ranking-title">順位</h2>
-            <span className="questionCount">準備中</span>
+            <span className="questionCount">上位50名</span>
           </div>
-          <div className="rankingPanel">
-            <div>
-              <span>現在の記録</span>
-              <strong>{overallRate}</strong>
-            </div>
-            <div>
-              <span>平均正解時間</span>
-              <strong>{overallAverage}</strong>
-            </div>
+
+          <div className="rankingCategoryTabs" aria-label="ランキング種目">
+            {(
+              [
+                ["effort", "正答数"],
+                ["rank", "到達ランク"]
+              ] as const
+            ).map(([category, label]) => (
+              <button
+                className={rankingCategory === category ? "active" : ""}
+                key={category}
+                type="button"
+                onClick={() => setRankingCategory(category)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
+          <div className="rankingPeriodTabs" aria-label="ランキング期間">
+            {(
+              [
+                ["daily", "日別"],
+                ["weekly", "週間"],
+                ["all", "歴代"]
+              ] as const
+            ).map(([period, label]) => (
+              <button
+                className={rankingPeriod === period ? "active" : ""}
+                key={period}
+                type="button"
+                onClick={() => setRankingPeriod(period)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {rankingCategory === "effort" ? (
+            <p className="rankingDescription">
+              正答数は実力ではなく、積み重ねた努力の記録です。
+            </p>
+          ) : (
+            <p className="rankingDescription">
+              期間内に送信した成績のうち、最高到達ランクを表示します。
+            </p>
+          )}
+
+          {rankingLoading ? (
+            <p className="rankingEmpty">読み込み中...</p>
+          ) : rankingError ? (
+            <p className="rankingEmpty error">ランキングを取得できませんでした。</p>
+          ) : rankingCategory === "effort" ? (
+            effortRankingRows.length > 0 ? (
+              <div className="rankingList">
+                {effortRankingRows.map((row, index) => (
+                  <div className="rankingRow" key={`${row.device_id}-${row.player_name}`}>
+                    <strong className="rankingPlace">{index + 1}</strong>
+                    <div className="rankingPlayer">
+                      <strong>{row.player_name}</strong>
+                      <span>
+                        解答数 {row.answer_count}問　平均
+                        {Number(row.average_seconds).toFixed(2)}秒
+                      </span>
+                    </div>
+                    <strong className="rankingEffortValue">{row.correct_count}問</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rankingEmpty">まだ投稿がありません。</p>
+            )
+          ) : rankRankingRows.length > 0 ? (
+            <div className="rankingList">
+              {rankRankingRows.map((row, index) => (
+                <div className="rankingRow" key={`${row.device_id}-${row.submitted_at}`}>
+                  <strong className="rankingPlace">{index + 1}</strong>
+                  <div className="rankingPlayer">
+                    <strong>{row.player_name}</strong>
+                    <span>
+                      {Number(row.average_seconds).toFixed(2)}秒　{row.answer_count}問　
+                      {difficultyLabel(row.difficulty_mode)}
+                    </span>
+                  </div>
+                  <strong
+                    className={`rankingRank ${rankClassName(row.rank as ResultRank)}`}
+                  >
+                    {row.rank}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rankingEmpty">まだ投稿がありません。</p>
+          )}
         </section>
       );
     }
@@ -1544,6 +1785,33 @@ export default function Home() {
             <span>1問平均</span>
             <strong>{formatTime(averageMs)}</strong>
           </div>
+        </div>
+
+        <div className="rankingSubmitCard">
+          <div>
+            <strong>ランキングへ送信</strong>
+            <p>
+              {settings.nickname.trim()
+                ? `${settings.nickname}として、正答数と到達ランクを送信します。`
+                : "設定でニックネームを入力すると送信できます。"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={submitCompletedResult}
+            disabled={
+              !settings.nickname.trim() ||
+              rankingSubmitStatus === "送信中..." ||
+              submittedRunId === session?.runId
+            }
+          >
+            {submittedRunId === session?.runId ? "送信済み" : "成績を送信"}
+          </button>
+          {rankingSubmitStatus ? (
+            <p className="rankingSubmitStatus" role="status">
+              {rankingSubmitStatus}
+            </p>
+          ) : null}
         </div>
 
         {wrongQuestions.length > 0 ? (

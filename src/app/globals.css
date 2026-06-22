@@ -409,8 +409,7 @@ h2 {
   opacity: 0.54;
 }
 
-.analysisGrid,
-.rankingPanel {
+.analysisGrid {
   display: grid;
   gap: 10px;
 }
@@ -419,8 +418,7 @@ h2 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.analysisCard,
-.rankingPanel > div {
+.analysisCard {
   display: grid;
   gap: 8px;
   min-height: 98px;
@@ -431,22 +429,122 @@ h2 {
   background: rgba(255, 255, 255, 0.72);
 }
 
-.analysisCard span,
-.rankingPanel span {
+.analysisCard span {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 900;
 }
 
-.analysisCard strong,
-.rankingPanel strong {
+.analysisCard strong {
   color: var(--text);
   font-size: 1.35rem;
   line-height: 1;
 }
 
-.rankingPanel {
+.rankingCategoryTabs,
+.rankingPeriodTabs {
+  display: grid;
+  gap: 5px;
+  padding: 4px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.08);
+}
+
+.rankingCategoryTabs {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rankingPeriodTabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
+.rankingCategoryTabs button,
+.rankingPeriodTabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.rankingCategoryTabs button.active,
+.rankingPeriodTabs button.active {
+  color: #1f1404;
+  background: linear-gradient(180deg, #f4d77c, #d49b36);
+}
+
+.rankingDescription {
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.rankingList {
+  display: grid;
+  gap: 6px;
+}
+
+.rankingRow {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 9px 11px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.rankingPlace {
+  color: #9a671f;
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+.rankingPlayer {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.rankingPlayer strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rankingPlayer span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.rankingEffortValue {
+  color: #177245;
+  font-size: 1.1rem;
+}
+
+.rankingRank {
+  min-width: 42px;
+  font-size: 1.5rem;
+  font-weight: 1000;
+  text-align: center;
+}
+
+.rankingEmpty {
+  padding: 30px 12px;
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+}
+
+.rankingEmpty.error {
+  color: var(--incorrect);
 }
 
 .settingsSection {
@@ -1548,6 +1646,50 @@ h2 {
   gap: 10px;
 }
 
+.rankingSubmitCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 14px;
+  border: 1px solid rgba(154, 103, 31, 0.26);
+  border-radius: 8px;
+  background: #fff8df;
+}
+
+.rankingSubmitCard strong {
+  color: var(--text);
+}
+
+.rankingSubmitCard p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.rankingSubmitCard button {
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 8px;
+  color: #1f1404;
+  background: linear-gradient(180deg, #f4d77c, #d49b36);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.rankingSubmitCard button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.rankingSubmitStatus {
+  grid-column: 1 / -1;
+  color: #7a4a16 !important;
+  font-weight: 900 !important;
+}
+
 .resultStatCard {
   display: grid;
   gap: 8px;
@@ -1785,13 +1927,20 @@ h2 {
 
   .challengeGrid,
   .typeFilterGrid,
-  .analysisGrid,
-  .rankingPanel {
+  .analysisGrid {
     grid-template-columns: 1fr;
   }
 
   .challengeCard {
     min-height: 160px;
+  }
+
+  .rankingSubmitCard {
+    grid-template-columns: 1fr;
+  }
+
+  .rankingSubmitCard button {
+    width: 100%;
   }
 
   .questionListItem {
