@@ -1590,7 +1590,7 @@ export default function Home() {
                 checked={selectedDifficulties.has(difficulty)}
                 onChange={() => toggleDifficulty(difficulty)}
               />
-              <span>{difficulty}</span>
+              <span>{difficulty === "応用" ? "難問" : difficulty}</span>
               <small>{difficultyCounts[difficulty]}問</small>
             </label>
           ))}
