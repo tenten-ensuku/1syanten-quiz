@@ -1140,7 +1140,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="panel choicesPanel" aria-label="一向聴タイプと受け入れ牌を回答">
+      <section
+        className={hasSubmitted ? "panel choicesPanel submitted" : "panel choicesPanel"}
+        aria-label="一向聴タイプと受け入れ牌を回答"
+      >
         <div className="shantenAnswerBlock">
           <h2>① 一向聴タイプを選択（任意）</h2>
           <div className="shantenCategoryGrid" aria-label="一向聴タイプ">
@@ -1211,37 +1214,32 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="choiceActions">
-          <button
-            className="submitButton"
-            type="button"
-            onClick={handleSubmit}
-            disabled={hasSubmitted}
-          >
-            解答する
-          </button>
-          <button
-            className="clearButton"
-            type="button"
-            onClick={handleClear}
-            disabled={
-              hasSubmitted ||
-              (selectedTiles.length === 0 && !selectedShantenCategoryId)
-            }
-          >
-            クリア
-          </button>
-        </div>
+        {hasSubmitted ? (
+          <div className="answerStatusInline" aria-live="polite">
+            <div className={isCorrect ? "resultBadge correct" : "resultBadge incorrect"}>
+              {isCorrect ? "正解！" : "不正解"}
+            </div>
+            <p className="answerTime">回答時間 {formatTime(lastAnswerMs)}</p>
+          </div>
+        ) : (
+          <div className="choiceActions">
+            <button className="submitButton" type="button" onClick={handleSubmit}>
+              解答する
+            </button>
+            <button
+              className="clearButton"
+              type="button"
+              onClick={handleClear}
+              disabled={selectedTiles.length === 0 && !selectedShantenCategoryId}
+            >
+              クリア
+            </button>
+          </div>
+        )}
       </section>
 
       {hasSubmitted && (
-        <section className="panel resultPanel" aria-live="polite">
-          <div className={isCorrect ? "resultBadge correct" : "resultBadge incorrect"}>
-            {isCorrect ? "正解！" : "不正解"}
-          </div>
-
-          <p className="answerTime">回答時間 {formatTime(lastAnswerMs)}</p>
-
+        <section className="panel explanationPanel">
           <div className="explanationBlock">
             <h2>解説</h2>
             <div

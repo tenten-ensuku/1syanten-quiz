@@ -826,6 +826,21 @@ h2 {
   margin-top: 16px;
 }
 
+.choicesPanel.submitted {
+  padding-block: 14px;
+}
+
+.choicesPanel.submitted .shantenAnswerBlock {
+  margin-bottom: 10px;
+}
+
+.answerStatusInline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
 .submitButton,
 .clearButton {
   min-height: 46px;
@@ -862,9 +877,10 @@ h2 {
   opacity: 0.6;
 }
 
-.resultPanel {
+.explanationPanel {
   display: grid;
   gap: 16px;
+  margin-top: 10px;
 }
 
 .resultBadge {
@@ -942,7 +958,7 @@ h2 {
 }
 
 .answerTime {
-  margin: -4px 0 0;
+  margin: 0;
   color: var(--muted);
   font-weight: 800;
 }
@@ -1402,6 +1418,20 @@ h2 {
 
   .panel {
     padding: 14px;
+  }
+
+  .choicesPanel.submitted {
+    padding-block: 10px;
+  }
+
+  .answerStatusInline {
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .answerStatusInline .resultBadge {
+    padding: 6px 10px;
+    font-size: 1.05rem;
   }
 
   .menuTop {
