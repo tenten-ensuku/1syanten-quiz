@@ -1332,11 +1332,6 @@ export default function Home() {
                     tileId={tileId}
                     isSelected={selectedTiles.includes(tileId)}
                     isAnswer={hasSubmitted && question.answers.includes(tileId)}
-                    isIncorrect={
-                      hasSubmitted &&
-                      selectedTiles.includes(tileId) &&
-                      !question.answers.includes(tileId)
-                    }
                     isBlocked={blockedTiles.has(tileId)}
                     isDisabled={hasSubmitted || blockedTiles.has(tileId)}
                     onSelect={handleSelect}
