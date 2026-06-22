@@ -1539,16 +1539,17 @@ export default function Home() {
             effortRankingRows.length > 0 ? (
               <div className="rankingList">
                 {effortRankingRows.map((row, index) => (
-                  <div className="rankingRow" key={`${row.device_id}-${row.player_name}`}>
+                  <div
+                    className="rankingRow rankingEffortRow"
+                    key={`${row.device_id}-${row.player_name}`}
+                  >
                     <strong className="rankingPlace">{index + 1}</strong>
-                    <div className="rankingPlayer">
-                      <strong>{row.player_name}</strong>
-                      <span>
-                        解答数 {row.answer_count}問　平均
-                        {Number(row.average_seconds).toFixed(2)}秒
-                      </span>
-                    </div>
+                    <strong className="rankingEffortName">{row.player_name}</strong>
                     <strong className="rankingEffortValue">{row.correct_count}問</strong>
+                    <span className="rankingEffortDetail">解答数 {row.answer_count}問</span>
+                    <span className="rankingEffortDetail">
+                      {Number(row.average_seconds).toFixed(2)}秒
+                    </span>
                   </div>
                 ))}
               </div>

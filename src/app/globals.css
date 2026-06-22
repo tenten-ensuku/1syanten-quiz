@@ -500,10 +500,24 @@ h2 {
   background: rgba(255, 255, 255, 0.74);
 }
 
+.rankingEffortRow {
+  grid-template-columns: 24px minmax(5.5rem, 1fr) auto auto auto;
+  gap: 6px;
+  min-height: 46px;
+  padding: 7px 9px;
+}
+
 .rankingPlace {
   color: #9a671f;
   font-size: 1.05rem;
   text-align: center;
+}
+
+.rankingEffortName {
+  overflow: hidden;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rankingPlayer {
@@ -526,7 +540,15 @@ h2 {
 
 .rankingEffortValue {
   color: #177245;
-  font-size: 1.1rem;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.rankingEffortDetail {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .rankingRank {
@@ -1931,6 +1953,21 @@ h2 {
 
   .rankingSubmitCard button {
     width: 100%;
+  }
+
+  .rankingEffortRow {
+    grid-template-columns: 20px minmax(4.8rem, 1fr) auto auto auto;
+    gap: 4px;
+    padding-inline: 7px;
+  }
+
+  .rankingEffortName,
+  .rankingEffortValue {
+    font-size: 0.78rem;
+  }
+
+  .rankingEffortDetail {
+    font-size: 0.62rem;
   }
 
   .questionListItem {
