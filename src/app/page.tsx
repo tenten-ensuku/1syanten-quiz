@@ -11,6 +11,7 @@ import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
 import { APP_VERSION } from "@/lib/appVersion";
+import { playTone } from "@/lib/audioTones";
 import { HONOR_TILE_IDS, QUIZ_QUESTIONS, ShantenType, TileId } from "@/lib/quizData";
 import { createRandomVariant } from "@/lib/quizTransforms";
 
@@ -553,6 +554,7 @@ export default function Home() {
   };
 
   const toggleFavorite = (questionId: string) => {
+    playTone("tap");
     setFavoriteQuestionIds((current) =>
       current.includes(questionId)
         ? current.filter((favoriteId) => favoriteId !== questionId)
@@ -647,6 +649,7 @@ export default function Home() {
       return;
     }
 
+    playTone("tap");
     setSelectedTiles((current) =>
       current.includes(tileId)
         ? current.filter((selectedTile) => selectedTile !== tileId)
@@ -705,6 +708,7 @@ export default function Home() {
 
     const answerMs = questionStartedAt ? performance.now() - questionStartedAt : 0;
     const correct = isSameTileSet(selectedTiles, question.answers);
+    playTone(correct ? "ok" : "ng");
     setLastAnswerMs(answerMs);
     setHasSubmitted(true);
     setQuestionStartedAt(null);
@@ -747,6 +751,7 @@ export default function Home() {
 
   const handleClear = () => {
     if (!hasSubmitted) {
+      playTone("tap");
       setSelectedTiles([]);
       setSelectedShantenCategoryId(null);
     }
@@ -1285,7 +1290,10 @@ export default function Home() {
                   type="button"
                   aria-pressed={isSelected}
                   disabled={hasSubmitted}
-                  onClick={() => setSelectedShantenCategoryId(option.id)}
+                  onClick={() => {
+                    playTone("tap");
+                    setSelectedShantenCategoryId(option.id);
+                  }}
                 >
                   <span className="shantenCategoryGroup">{option.groupLabel}</span>
                   <span className="shantenCategoryMain">{option.mainLabel}</span>
