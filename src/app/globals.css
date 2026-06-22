@@ -1377,30 +1377,23 @@ h2 {
 }
 
 .wrongAnswerTiles {
-  flex-wrap: wrap;
-  gap: 2px;
+  flex-wrap: nowrap;
+  gap: 0;
+  color: var(--text);
+  overflow: visible;
+  white-space: nowrap;
 }
 
 .wrongAnswerTiles .tileCompact {
-  width: 30px;
-  flex: 0 0 30px;
-  border-radius: 3px;
-}
-
-.wrongAnswerTiles {
-  color: var(--text);
-  overflow: hidden;
+  width: 0.82em;
+  flex: 0 0 0.82em;
+  border-radius: 2px;
 }
 
 .wrongCategoryText {
   color: var(--text);
   font-size: 0.82rem;
   line-height: 1.55;
-}
-
-.wrongAnswerTiles .tileCompact {
-  width: 30px;
-  border-radius: 3px;
 }
 
 .perfectRunText {
@@ -1651,11 +1644,6 @@ h2 {
   .wrongAnswerRows {
     grid-template-columns: 38px minmax(0, 1fr);
     align-items: start;
-  }
-
-  .wrongAnswerTiles .tileCompact {
-    width: 27px;
-    flex-basis: 27px;
   }
 
   .answerJudgementGrid {
