@@ -1199,8 +1199,12 @@ export default function Home() {
       });
       setSubmittedRunId(session.runId);
       setRankingSubmitStatus("ランキングへ送信しました。");
-    } catch {
-      setRankingSubmitStatus("送信に失敗しました。通信状況を確認してください。");
+    } catch (error) {
+      setRankingSubmitStatus(
+        error instanceof Error
+          ? `送信に失敗しました。${error.message}`
+          : "送信に失敗しました。"
+      );
     }
   };
 
@@ -1897,9 +1901,7 @@ export default function Home() {
               })}
             </div>
           </section>
-        ) : (
-          <p className="perfectRunText">全問正解。これは気持ちいいです。</p>
-        )}
+        ) : null}
 
         <div className="completionActions">
           <button className="clearButton" type="button" onClick={returnToMenu}>

@@ -1821,16 +1821,6 @@ h2 {
   line-height: 1.55;
 }
 
-.perfectRunText {
-  margin-bottom: 0;
-  padding: 12px 14px;
-  border: 1px solid rgba(23, 114, 69, 0.16);
-  border-radius: 8px;
-  color: var(--correct);
-  background: var(--correct-bg);
-  font-weight: 900;
-}
-
 .completionActions {
   display: flex;
   flex-wrap: wrap;

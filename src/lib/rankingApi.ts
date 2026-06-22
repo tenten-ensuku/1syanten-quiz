@@ -87,10 +87,11 @@ async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<T> 
     throw new Error(message || "ランキング通信に失敗しました。");
   }
 
-  if (response.status === 204) {
+  const responseText = await response.text();
+  if (!responseText) {
     return undefined as T;
   }
-  return (await response.json()) as T;
+  return JSON.parse(responseText) as T;
 }
 
 export async function submitRankingResult(payload: RankingSubmission) {
