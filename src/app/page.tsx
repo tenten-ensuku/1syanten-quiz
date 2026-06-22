@@ -23,7 +23,7 @@ type QuestionStats = {
 
 type StatsByQuestion = Record<string, QuestionStats>;
 
-type ResultRank = "神" | "SS" | "S" | "A" | "B" | "C" | "D" | "E";
+type ResultRank = "神" | "SS" | "S" | "A" | "B" | "C" | "D" | "E" | "F";
 type ShantenCategoryId = "two-meld" | "headless-1" | "headless-2" | "floating";
 
 type SessionWrongQuestion = {
@@ -272,35 +272,36 @@ function rankForResult(questionCount: number, correctCount: number, totalMs: num
   const correctRate = correctCount / questionCount;
   const isPerfect = correctCount === questionCount;
 
-  if (isPerfect && averageSeconds <= 6) {
-    return "神";
-  }
-
-  if (isPerfect && averageSeconds <= 10) {
-    return "SS";
-  }
-
-  if (isPerfect && averageSeconds <= 15) {
-    return "S";
-  }
-
-  if (correctRate >= 0.95 && averageSeconds <= 20) {
+  if (isPerfect) {
+    if (averageSeconds < 6) {
+      return "神";
+    }
+    if (averageSeconds <= 12) {
+      return "SS";
+    }
+    if (averageSeconds <= 20) {
+      return "S";
+    }
     return "A";
   }
 
-  if (correctRate >= 0.9 && averageSeconds <= 25) {
+  if (correctRate >= 0.9) {
     return "B";
   }
 
-  if (correctRate >= 0.8) {
+  if (correctRate >= 0.7) {
     return "C";
   }
 
-  if (correctRate >= 0.6) {
+  if (correctRate >= 0.5) {
     return "D";
   }
 
-  return "E";
+  if (correctRate >= 0.3) {
+    return "E";
+  }
+
+  return "F";
 }
 
 function rankClassName(rank: ResultRank) {
@@ -321,27 +322,31 @@ function rankClassName(rank: ResultRank) {
       return "rankD";
     case "E":
       return "rankE";
+    case "F":
+      return "rankF";
   }
 }
 
 function rankComment(rank: ResultRank) {
   switch (rank) {
     case "神":
-      return "てんてん級。速すぎる。";
+      return "基礎講義（一向聴）マスター！このドリルは卒業してください。";
     case "SS":
-      return "全問正解、文句なし。";
+      return "とても早くて正確です。ドリル卒業してOK。";
     case "S":
-      return "安定して強い。";
+      return "早くて正確です。認識速度を更に上げて行きましょう。";
     case "A":
-      return "かなり実戦的。";
+      return "正確です。認識速度を更に上げて行きましょう。";
     case "B":
-      return "基礎は見えている。";
+      return "惜しい。間違えた問題をしっかりと復習しましょう。";
     case "C":
-      return "復習すると伸びる。";
+      return "良い感じです。面子を数えて、一向聴の分類ができるようになっています。";
     case "D":
-      return "まずは型を見分けよう。";
+      return "まずは面子を数えて一向聴の分類をすることからはじめましょう。";
     case "E":
-      return "ここから育てよう。";
+      return "基礎講義を要復習。";
+    case "F":
+      return "まずは基礎講義を受けましょう。";
   }
 }
 
