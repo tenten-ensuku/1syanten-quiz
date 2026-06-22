@@ -58,6 +58,7 @@ type TypeFilterOption = {
 };
 
 const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
+const FAVORITES_STORAGE_KEY = "iishanten-quiz-favorites-v1";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 type ExplanationAsset = {
@@ -183,6 +184,19 @@ function loadStats(): StatsByQuestion {
     return rawStats ? (JSON.parse(rawStats) as StatsByQuestion) : {};
   } catch {
     return {};
+  }
+}
+
+function loadFavorites(): string[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const rawFavorites = window.localStorage.getItem(FAVORITES_STORAGE_KEY);
+    return rawFavorites ? (JSON.parse(rawFavorites) as string[]) : [];
+  } catch {
+    return [];
   }
 }
 
@@ -408,6 +422,8 @@ export default function Home() {
   const [lastAnswerMs, setLastAnswerMs] = useState(0);
   const [stats, setStats] = useState<StatsByQuestion>({});
   const [hasLoadedStats, setHasLoadedStats] = useState(false);
+  const [favoriteQuestionIds, setFavoriteQuestionIds] = useState<string[]>([]);
+  const [hasLoadedFavorites, setHasLoadedFavorites] = useState(false);
   const [questionStartedAt, setQuestionStartedAt] = useState<number | null>(null);
   const [selectedTypeFilterIds, setSelectedTypeFilterIds] = useState<string[]>([]);
   const [questionListSort, setQuestionListSort] = useState<QuestionListSort>("default");
@@ -420,6 +436,8 @@ export default function Home() {
   useEffect(() => {
     setStats(loadStats());
     setHasLoadedStats(true);
+    setFavoriteQuestionIds(loadFavorites());
+    setHasLoadedFavorites(true);
   }, []);
 
   useEffect(() => {
@@ -427,6 +445,15 @@ export default function Home() {
       window.localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(stats));
     }
   }, [hasLoadedStats, stats]);
+
+  useEffect(() => {
+    if (hasLoadedFavorites) {
+      window.localStorage.setItem(
+        FAVORITES_STORAGE_KEY,
+        JSON.stringify(favoriteQuestionIds)
+      );
+    }
+  }, [favoriteQuestionIds, hasLoadedFavorites]);
 
   const correctShantenCategoryId = getShantenCategoryId(question.shantenTypes);
   const isTileAnswerCorrect = isSameTileSet(selectedTiles, question.answers);
@@ -511,6 +538,14 @@ export default function Home() {
       }
       return next;
     });
+  };
+
+  const toggleFavorite = (questionId: string) => {
+    setFavoriteQuestionIds((current) =>
+      current.includes(questionId)
+        ? current.filter((favoriteId) => favoriteId !== questionId)
+        : [...current, questionId]
+    );
   };
 
   const loadQuestion = (baseIndex: number) => {
@@ -1030,6 +1065,28 @@ export default function Home() {
                   <div className="wrongQuestionItem" key={`${item.questionId}-${index}`}>
                     <div className="wrongQuestionTitle">
                       <strong>問題 {item.questionId}</strong>
+                      <button
+                        className={
+                          favoriteQuestionIds.includes(item.questionId)
+                            ? "favoriteButton active"
+                            : "favoriteButton"
+                        }
+                        type="button"
+                        aria-pressed={favoriteQuestionIds.includes(item.questionId)}
+                        aria-label={
+                          favoriteQuestionIds.includes(item.questionId)
+                            ? `問題 ${item.questionId}をお気に入りから外す`
+                            : `問題 ${item.questionId}をお気に入りに追加`
+                        }
+                        title={
+                          favoriteQuestionIds.includes(item.questionId)
+                            ? "お気に入りから外す"
+                            : "お気に入りに追加"
+                        }
+                        onClick={() => toggleFavorite(item.questionId)}
+                      >
+                        {favoriteQuestionIds.includes(item.questionId) ? "★" : "☆"}
+                      </button>
                     </div>
                     <div
                       className="wrongQuestionTiles"
@@ -1070,18 +1127,6 @@ export default function Home() {
                         {item.answers.map((tileId) => (
                           <TileView key={`wrong-answer-${item.questionId}-${tileId}`} tileId={tileId} compact />
                         ))}
-                      </span>
-                      <span>選択</span>
-                      <span className="wrongAnswerTiles">
-                        {item.selectedTiles.length > 0
-                          ? item.selectedTiles.map((tileId) => (
-                              <TileView
-                                key={`wrong-selected-${item.questionId}-${tileId}`}
-                                tileId={tileId}
-                                compact
-                              />
-                            ))
-                          : "-"}
                       </span>
                     </div>
                   </div>
