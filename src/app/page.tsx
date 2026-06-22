@@ -588,6 +588,41 @@ function parseExplanationSegments(explanation: string): ExplanationSegment[] {
   return segments;
 }
 
+function ChallengeRecordDisplay({ record }: { record?: ChallengeRecord }) {
+  return (
+    <span className="challengeRecord">
+      <small>自己記録</small>
+      {record ? (
+        <span className="challengeRecordLine">
+          {record.rank === "神" ? (
+            <img
+              className="challengeGodRankImage"
+              src={`${BASE_PATH}/god-rank.png`}
+              alt="神"
+            />
+          ) : (
+            <strong
+              className={`challengeRecordRank ${rankClassName(record.rank)}`}
+            >
+              {record.rank}
+            </strong>
+          )}
+          <strong className="challengeRecordResult">
+            {record.correctCount === record.questionCount
+              ? "全問正解"
+              : `${record.correctCount}/${record.questionCount}正解`}
+          </strong>
+          <span className="challengeRecordTime">
+            {formatTime(record.totalMs / record.questionCount)}
+          </span>
+        </span>
+      ) : (
+        <strong>－</strong>
+      )}
+    </span>
+  );
+}
+
 function ExplanationText({ explanation }: { explanation: string }) {
   return (
     <p className="explanationText">
@@ -1755,22 +1790,7 @@ export default function Home() {
           >
             <span className="challengeLabel">10問ランダム</span>
             <span className="challengeMeta">回答中のみ計時</span>
-            <span className="challengeRecord">
-              <small>自己記録</small>
-              {randomRecord ? (
-                <>
-                  <strong>
-                    {randomRecord.rank}　{randomRecord.score}pt
-                  </strong>
-                  <span>
-                    {randomRecord.correctCount}/{randomRecord.questionCount}　平均
-                    {formatTime(randomRecord.totalMs / randomRecord.questionCount)}
-                  </span>
-                </>
-              ) : (
-                <strong>－</strong>
-              )}
-            </span>
+            <ChallengeRecordDisplay record={randomRecord} />
           </button>
           <button
             className="challengeCard"
@@ -1780,22 +1800,7 @@ export default function Home() {
           >
             <span className="challengeLabel">全問</span>
             <span className="challengeMeta">{challengeQuestionIndexes.length}種を通しで挑戦</span>
-            <span className="challengeRecord">
-              <small>自己記録</small>
-              {allRecord ? (
-                <>
-                  <strong>
-                    {allRecord.rank}　{allRecord.score}pt
-                  </strong>
-                  <span>
-                    {allRecord.correctCount}/{allRecord.questionCount}　平均
-                    {formatTime(allRecord.totalMs / allRecord.questionCount)}
-                  </span>
-                </>
-              ) : (
-                <strong>－</strong>
-              )}
-            </span>
+            <ChallengeRecordDisplay record={allRecord} />
           </button>
         </div>
         <div className="typeChallengePanel">

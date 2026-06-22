@@ -302,7 +302,7 @@ h2 {
 .challengeRecord {
   display: grid;
   align-self: end;
-  gap: 2px;
+  gap: 5px;
   padding-top: 10px;
   border-top: 1px solid currentColor;
   font-size: 0.78rem;
@@ -323,6 +323,42 @@ h2 {
 
 .challengeRecord span {
   font-weight: 800;
+}
+
+.challengeRecordLine {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.challengeRecordRank {
+  flex: 0 0 auto;
+  font-size: 1.2rem !important;
+  font-weight: 1000;
+  line-height: 1;
+}
+
+.challengeRecordResult {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.88rem !important;
+  text-overflow: ellipsis;
+}
+
+.challengeRecordTime {
+  margin-left: auto;
+  font-size: 0.82rem;
+}
+
+.challengeGodRankImage {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 0 5px rgba(242, 210, 123, 0.48));
 }
 
 .typeChallengePanel {
