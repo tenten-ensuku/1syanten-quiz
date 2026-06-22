@@ -6,6 +6,8 @@ type AudioWindow = Window &
   };
 
 let audioContext: AudioContext | null = null;
+let audioResumePromise: Promise<void> | null = null;
+let hasQueuedInitialTone = false;
 
 function ensureAudioContext() {
   if (typeof window === "undefined") {
@@ -24,10 +26,6 @@ function ensureAudioContext() {
       audioContext = new AudioContextConstructor();
     }
 
-    if (audioContext.state !== "running") {
-      void audioContext.resume().catch(() => undefined);
-    }
-
     return audioContext;
   } catch {
     audioContext = null;
@@ -35,12 +33,7 @@ function ensureAudioContext() {
   }
 }
 
-export function playTone(type: AudioTone) {
-  const context = ensureAudioContext();
-  if (!context) {
-    return;
-  }
-
+function scheduleTone(context: AudioContext, type: AudioTone) {
   const now = context.currentTime;
   const oscillator = context.createOscillator();
   const gain = context.createGain();
@@ -77,4 +70,34 @@ export function playTone(type: AudioTone) {
   gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
   oscillator.start(now);
   oscillator.stop(now + 0.055);
+}
+
+export function playTone(type: AudioTone) {
+  const context = ensureAudioContext();
+  if (!context) {
+    return;
+  }
+
+  if (context.state === "running") {
+    scheduleTone(context, type);
+    return;
+  }
+
+  if (hasQueuedInitialTone) {
+    return;
+  }
+
+  hasQueuedInitialTone = true;
+  audioResumePromise ??= context.resume();
+  void audioResumePromise
+    .then(() => {
+      if (context.state === "running") {
+        scheduleTone(context, type);
+      }
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      audioResumePromise = null;
+      hasQueuedInitialTone = false;
+    });
 }
