@@ -316,6 +316,107 @@ select
 from public.iishanten_daily_effort
 group by device_id;
 
+create or replace view public.iishanten_rank_daily
+with (security_invoker = true) as
+select * from (
+  select
+    device_id,
+    player_name,
+    (submitted_at at time zone 'Asia/Tokyo')::date as period_key,
+    rank,
+    score,
+    average_seconds,
+    answer_count,
+    difficulty_mode,
+    challenge_mode,
+    submitted_at,
+    row_number() over (
+      partition by
+        device_id,
+        (submitted_at at time zone 'Asia/Tokyo')::date,
+        difficulty_mode,
+        challenge_mode
+      order by
+        case rank
+          when '神' then 9 when 'SS' then 8 when 'S' then 7
+          when 'A' then 6 when 'B' then 5 when 'C' then 4
+          when 'D' then 3 when 'E' then 2 else 1
+        end desc,
+        average_seconds asc,
+        score desc,
+        submitted_at asc
+    ) as player_row
+  from public.iishanten_ranking_submissions
+  where challenge_mode in ('random10', 'all')
+) ranked
+where player_row = 1;
+
+create or replace view public.iishanten_rank_weekly
+with (security_invoker = true) as
+select * from (
+  select
+    device_id,
+    player_name,
+    date_trunc('week', submitted_at at time zone 'Asia/Tokyo')::date as period_key,
+    rank,
+    score,
+    average_seconds,
+    answer_count,
+    difficulty_mode,
+    challenge_mode,
+    submitted_at,
+    row_number() over (
+      partition by
+        device_id,
+        date_trunc('week', submitted_at at time zone 'Asia/Tokyo')::date,
+        difficulty_mode,
+        challenge_mode
+      order by
+        case rank
+          when '神' then 9 when 'SS' then 8 when 'S' then 7
+          when 'A' then 6 when 'B' then 5 when 'C' then 4
+          when 'D' then 3 when 'E' then 2 else 1
+        end desc,
+        average_seconds asc,
+        score desc,
+        submitted_at asc
+    ) as player_row
+  from public.iishanten_ranking_submissions
+  where challenge_mode in ('random10', 'all')
+) ranked
+where player_row = 1;
+
+create or replace view public.iishanten_rank_all
+with (security_invoker = true) as
+select * from (
+  select
+    device_id,
+    player_name,
+    'all'::text as period_key,
+    rank,
+    score,
+    average_seconds,
+    answer_count,
+    difficulty_mode,
+    challenge_mode,
+    submitted_at,
+    row_number() over (
+      partition by device_id, difficulty_mode, challenge_mode
+      order by
+        case rank
+          when '神' then 9 when 'SS' then 8 when 'S' then 7
+          when 'A' then 6 when 'B' then 5 when 'C' then 4
+          when 'D' then 3 when 'E' then 2 else 1
+        end desc,
+        average_seconds asc,
+        score desc,
+        submitted_at asc
+    ) as player_row
+  from public.iishanten_ranking_submissions
+  where challenge_mode in ('random10', 'all')
+) ranked
+where player_row = 1;
+
 revoke select on public.iishanten_daily_effort from anon;
 grant select (
   device_id,

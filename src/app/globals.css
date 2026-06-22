@@ -522,7 +522,8 @@ h2 {
 }
 
 .rankingCategoryTabs,
-.rankingPeriodTabs {
+.rankingPeriodTabs,
+.rankGenreGrid {
   display: grid;
   gap: 5px;
   padding: 4px;
@@ -539,8 +540,14 @@ h2 {
   margin-top: 8px;
 }
 
+.rankGenreGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
 .rankingCategoryTabs button,
-.rankingPeriodTabs button {
+.rankingPeriodTabs button,
+.rankGenreGrid button {
   min-height: 40px;
   border: 0;
   border-radius: 6px;
@@ -551,9 +558,16 @@ h2 {
 }
 
 .rankingCategoryTabs button.active,
-.rankingPeriodTabs button.active {
+.rankingPeriodTabs button.active,
+.rankGenreGrid button.active {
   color: #1f1404;
   background: linear-gradient(180deg, #f4d77c, #d49b36);
+}
+
+.rankGenreGrid button {
+  padding: 7px 3px;
+  font-size: 0.72rem;
+  line-height: 1.2;
 }
 
 .rankingDescription {

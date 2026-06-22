@@ -22,6 +22,7 @@ import {
   type RankingChallengeMode,
   type RankingDifficulty,
   type RankingPeriod,
+  type RankGenre,
   type PendingDailyEffort,
   fetchEffortRankings,
   fetchRankRankings,
@@ -118,6 +119,15 @@ const DEFAULT_SETTINGS: AppSettings = {
   slideTouchEnabled: true
 };
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+const RANK_GENRES: { id: RankGenre; label: string }[] = [
+  { id: "basic-random10", label: "基本10問" },
+  { id: "both-random10", label: "基本+難問10問" },
+  { id: "advanced-random10", label: "難問10問" },
+  { id: "basic-all", label: "基本63問" },
+  { id: "both-all", label: "基本+難問84問" },
+  { id: "advanced-all", label: "難問21問" }
+];
 
 type ExplanationAsset = {
   src: string;
@@ -348,16 +358,6 @@ function getDeviceId() {
 
 function createRunId() {
   return crypto.randomUUID();
-}
-
-function difficultyLabel(mode: RankingDifficulty) {
-  if (mode === "basic") {
-    return "基本";
-  }
-  if (mode === "advanced") {
-    return "難問";
-  }
-  return "基本＋難問";
 }
 
 function getDifficultySelectionKey(
@@ -670,6 +670,7 @@ export default function Home() {
   const [rankingCategory, setRankingCategory] =
     useState<RankingCategory>("effort");
   const [rankingPeriod, setRankingPeriod] = useState<RankingPeriod>("daily");
+  const [rankGenre, setRankGenre] = useState<RankGenre>("basic-random10");
   const [effortRankingRows, setEffortRankingRows] = useState<EffortRankingRow[]>([]);
   const [rankRankingRows, setRankRankingRows] = useState<RankRankingRow[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
@@ -769,7 +770,7 @@ export default function Home() {
     const request =
       rankingCategory === "effort"
         ? fetchEffortRankings(rankingPeriod)
-        : fetchRankRankings(rankingPeriod);
+        : fetchRankRankings(rankingPeriod, rankGenre);
 
     void request
       .then((rows) => {
@@ -798,7 +799,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [menuTab, rankingCategory, rankingPeriod]);
+  }, [menuTab, rankGenre, rankingCategory, rankingPeriod]);
 
   const correctShantenCategoryId = getShantenCategoryId(question.shantenTypes);
   const isTileAnswerCorrect = isSameTileSet(selectedTiles, question.answers);
@@ -1700,6 +1701,21 @@ export default function Home() {
             ))}
           </div>
 
+          {rankingCategory === "rank" ? (
+            <div className="rankGenreGrid" aria-label="到達ランクのジャンル">
+              {RANK_GENRES.map((genre) => (
+                <button
+                  className={rankGenre === genre.id ? "active" : ""}
+                  key={genre.id}
+                  type="button"
+                  onClick={() => setRankGenre(genre.id)}
+                >
+                  {genre.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           {rankingCategory === "effort" ? (
             <p className="rankingDescription">
               正答数は、積み重ねた努力の記録です。
@@ -1743,8 +1759,7 @@ export default function Home() {
                   <div className="rankingPlayer">
                     <strong>{row.player_name}</strong>
                     <span>
-                      {Number(row.average_seconds).toFixed(2)}秒　{row.answer_count}問　
-                      {difficultyLabel(row.difficulty_mode)}
+                      {Number(row.average_seconds).toFixed(2)}秒　{row.answer_count}問
                     </span>
                   </div>
                   <strong

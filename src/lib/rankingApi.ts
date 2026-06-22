@@ -2,6 +2,13 @@ export type RankingPeriod = "daily" | "weekly" | "all";
 export type RankingCategory = "effort" | "rank";
 export type RankingDifficulty = "basic" | "both" | "advanced";
 export type RankingChallengeMode = "random10" | "all" | "type_filtered";
+export type RankGenre =
+  | "basic-random10"
+  | "both-random10"
+  | "advanced-random10"
+  | "basic-all"
+  | "both-all"
+  | "advanced-all";
 
 export type RankingSubmission = {
   run_id: string;
@@ -159,14 +166,23 @@ export async function fetchEffortRankings(period: RankingPeriod) {
   return supabaseRequest<EffortRankingRow[]>(`${view}?${query}`);
 }
 
-export async function fetchRankRankings(period: RankingPeriod) {
+export async function fetchRankRankings(
+  period: RankingPeriod,
+  genre: RankGenre
+) {
   const view = `iishanten_rank_${period}`;
   const periodKey = getPeriodKey(period);
+  const [difficultyMode, challengeMode] = genre.split("-") as [
+    RankingDifficulty,
+    Exclude<RankingChallengeMode, "type_filtered">
+  ];
   const query = new URLSearchParams({
     select:
       "device_id,player_name,rank,score,average_seconds,answer_count,difficulty_mode,challenge_mode,submitted_at",
     limit: "200"
   });
+  query.set("difficulty_mode", `eq.${difficultyMode}`);
+  query.set("challenge_mode", `eq.${challengeMode}`);
   if (periodKey) {
     query.set("period_key", `eq.${periodKey}`);
   }
