@@ -1417,6 +1417,9 @@ export default function Home() {
                 </button>
               </>
             )}
+            <button className="listReturnButton" type="button" onClick={returnToChallengeMenu}>
+              メニューへ
+            </button>
           </div>
         </section>
       )}
