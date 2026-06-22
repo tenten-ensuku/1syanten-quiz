@@ -87,6 +87,7 @@ type AppSettings = {
   slideTouchEnabled: boolean;
 };
 type PendingDailyEffortByDate = Record<string, PendingDailyEffort>;
+type DailyActivityByDate = Record<string, PendingDailyEffort>;
 type TileChoiceGroup = { label: string; tiles: TileId[] };
 type TypeFilterOption = {
   id: ShantenCategoryId;
@@ -101,13 +102,15 @@ const CHALLENGE_RECORDS_STORAGE_KEY = "iishanten-quiz-challenge-records-v1";
 const SETTINGS_STORAGE_KEY = "iishanten-quiz-settings-v1";
 const DEVICE_ID_STORAGE_KEY = "iishanten-quiz-device-id-v1";
 const PENDING_DAILY_EFFORT_STORAGE_KEY = "iishanten-quiz-pending-daily-effort-v1";
+const DAILY_ACTIVITY_STORAGE_KEY = "iishanten-quiz-daily-activity-v1";
 const BACKUP_STORAGE_KEYS = [
   STATS_STORAGE_KEY,
   FAVORITES_STORAGE_KEY,
   CHALLENGE_RECORDS_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
   DEVICE_ID_STORAGE_KEY,
-  PENDING_DAILY_EFFORT_STORAGE_KEY
+  PENDING_DAILY_EFFORT_STORAGE_KEY,
+  DAILY_ACTIVITY_STORAGE_KEY
 ] as const;
 const DEFAULT_SETTINGS: AppSettings = {
   nickname: "",
@@ -305,6 +308,28 @@ function loadPendingDailyEffort(): PendingDailyEffortByDate {
   } catch {
     return {};
   }
+}
+
+function loadDailyActivity(): DailyActivityByDate {
+  if (typeof window === "undefined") {
+    return {};
+  }
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(DAILY_ACTIVITY_STORAGE_KEY) ?? "{}"
+    ) as DailyActivityByDate;
+    if (Object.keys(stored).length > 0) {
+      return stored;
+    }
+    return loadPendingDailyEffort();
+  } catch {
+    return {};
+  }
+}
+
+function formatActivityDate(dateKey: string) {
+  const [, month, day] = dateKey.split("-");
+  return `${Number(month)}/${Number(day)}`;
 }
 
 function sanitizeNickname(value: string) {
@@ -605,6 +630,8 @@ export default function Home() {
     useState<PendingDailyEffortByDate>({});
   const [hasLoadedPendingDailyEffort, setHasLoadedPendingDailyEffort] =
     useState(false);
+  const [dailyActivity, setDailyActivity] = useState<DailyActivityByDate>({});
+  const [hasLoadedDailyActivity, setHasLoadedDailyActivity] = useState(false);
   const [rankingCategory, setRankingCategory] =
     useState<RankingCategory>("effort");
   const [rankingPeriod, setRankingPeriod] = useState<RankingPeriod>("daily");
@@ -637,6 +664,8 @@ export default function Home() {
     setHasLoadedSettings(true);
     setPendingDailyEffort(loadPendingDailyEffort());
     setHasLoadedPendingDailyEffort(true);
+    setDailyActivity(loadDailyActivity());
+    setHasLoadedDailyActivity(true);
   }, []);
 
   useEffect(() => {
@@ -678,6 +707,15 @@ export default function Home() {
       );
     }
   }, [hasLoadedPendingDailyEffort, pendingDailyEffort]);
+
+  useEffect(() => {
+    if (hasLoadedDailyActivity) {
+      window.localStorage.setItem(
+        DAILY_ACTIVITY_STORAGE_KEY,
+        JSON.stringify(dailyActivity)
+      );
+    }
+  }, [dailyActivity, hasLoadedDailyActivity]);
 
   useEffect(() => {
     if (viewMode === "timeAttackComplete") {
@@ -759,6 +797,9 @@ export default function Home() {
       : -1
   ).filter((index) => index >= 0);
   const typeFilteredQuestionCount = typeFilteredQuestionIndexes.length;
+  const dailyActivityRows = Object.entries(dailyActivity)
+    .filter(([, activity]) => activity.answerCount > 0)
+    .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate));
   const difficultySelectionKey = getDifficultySelectionKey(selectedDifficulties);
   const randomRecordKey = difficultySelectionKey
     ? (`${difficultySelectionKey}:random10` as ChallengeRecordKey)
@@ -1062,6 +1103,7 @@ export default function Home() {
       setFavoriteQuestionIds(loadFavorites());
       setChallengeRecords(loadChallengeRecords());
       setPendingDailyEffort(loadPendingDailyEffort());
+      setDailyActivity(loadDailyActivity());
       const restoredSettings = loadSettings();
       setSettings(restoredSettings);
       setAudioVolume(restoredSettings.volume);
@@ -1106,6 +1148,21 @@ export default function Home() {
     });
     const activityDate = getJstDateKey();
     setPendingDailyEffort((current) => {
+      const previous = current[activityDate] ?? {
+        correctCount: 0,
+        answerCount: 0,
+        totalMs: 0
+      };
+      return {
+        ...current,
+        [activityDate]: {
+          correctCount: previous.correctCount + (correct ? 1 : 0),
+          answerCount: previous.answerCount + 1,
+          totalMs: previous.totalMs + answerMs
+        }
+      };
+    });
+    setDailyActivity((current) => {
       const previous = current[activityDate] ?? {
         correctCount: 0,
         answerCount: 0,
@@ -1424,21 +1481,35 @@ export default function Home() {
         <section className="menuSection" aria-labelledby="analysis-title">
           <div className="sectionTitleRow">
             <h2 id="analysis-title">自己分析</h2>
+            <span className="questionCount">日別</span>
           </div>
-          <div className="analysisGrid">
-            <div className="analysisCard">
-              <span>総回答</span>
-              <strong>{totalAttempts}回</strong>
+          {dailyActivityRows.length > 0 ? (
+            <div className="dailyAnalysisTable">
+              <div className="dailyAnalysisHeader" aria-hidden="true">
+                <span>日付</span>
+                <span>正解数</span>
+                <span>解答数</span>
+                <span>正答率</span>
+                <span>平均時間</span>
+              </div>
+              {dailyActivityRows.map(([dateKey, activity]) => (
+                <div className="dailyAnalysisRow" key={dateKey}>
+                  <strong>{formatActivityDate(dateKey)}</strong>
+                  <span>{activity.correctCount}</span>
+                  <span>{activity.answerCount}</span>
+                  <span>
+                    {Math.round(
+                      (activity.correctCount / activity.answerCount) * 100
+                    )}
+                    %
+                  </span>
+                  <span>{formatTime(activity.totalMs / activity.answerCount)}</span>
+                </div>
+              ))}
             </div>
-            <div className="analysisCard">
-              <span>正答率</span>
-              <strong>{overallRate}</strong>
-            </div>
-            <div className="analysisCard">
-              <span>平均正解時間</span>
-              <strong>{overallAverage}</strong>
-            </div>
-          </div>
+          ) : (
+            <p className="analysisEmpty">プレイ記録はまだありません。</p>
+          )}
         </section>
       );
     }

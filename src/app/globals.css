@@ -441,6 +441,50 @@ h2 {
   line-height: 1;
 }
 
+.dailyAnalysisTable {
+  overflow: hidden;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.dailyAnalysisHeader,
+.dailyAnalysisRow {
+  display: grid;
+  grid-template-columns: 0.8fr repeat(4, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 7px 10px;
+  text-align: center;
+}
+
+.dailyAnalysisHeader {
+  min-height: 36px;
+  color: var(--muted);
+  background: rgba(17, 24, 39, 0.06);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.dailyAnalysisRow {
+  border-top: 1px solid rgba(17, 24, 39, 0.08);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.dailyAnalysisRow strong {
+  color: #9a671f;
+}
+
+.analysisEmpty {
+  padding: 28px 12px;
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
+}
+
 .rankingCategoryTabs,
 .rankingPeriodTabs {
   display: grid;
