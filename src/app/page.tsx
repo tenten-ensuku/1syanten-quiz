@@ -1361,6 +1361,13 @@ export default function Home() {
             >
               クリア
             </button>
+            <button
+              className="menuActionButton"
+              type="button"
+              onClick={returnToChallengeMenu}
+            >
+              メニューへ
+            </button>
           </div>
         )}
       </section>
@@ -1397,22 +1404,19 @@ export default function Home() {
               </button>
             ) : (
               <>
-              <button
-                className="nextButton"
-                type="button"
-                onClick={handleNextSingleQuestion}
-                disabled={currentBaseIndex + 1 >= QUIZ_QUESTIONS.length}
-              >
-                次の問題へ
-              </button>
-              <button className="listReturnButton" type="button" onClick={returnToQuestionList}>
-                問題一覧へ
-              </button>
+                <button
+                  className="nextButton"
+                  type="button"
+                  onClick={handleNextSingleQuestion}
+                  disabled={currentBaseIndex + 1 >= QUIZ_QUESTIONS.length}
+                >
+                  次の問題へ
+                </button>
+                <button className="listReturnButton" type="button" onClick={returnToQuestionList}>
+                  問題一覧へ
+                </button>
               </>
             )}
-            <button className="listReturnButton" type="button" onClick={returnToChallengeMenu}>
-              メニューへ
-            </button>
           </div>
         </section>
       )}

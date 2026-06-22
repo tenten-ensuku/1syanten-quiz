@@ -862,8 +862,8 @@ h2 {
 }
 
 .choiceActions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 16px;
 }
@@ -884,7 +884,8 @@ h2 {
 }
 
 .submitButton,
-.clearButton {
+.clearButton,
+.menuActionButton {
   min-height: 46px;
   padding: 10px 18px;
   border-radius: 8px;
@@ -898,7 +899,8 @@ h2 {
   background: var(--accent);
 }
 
-.clearButton {
+.clearButton,
+.menuActionButton {
   border: 1px solid var(--line);
   color: var(--text);
   background: var(--surface-strong);
@@ -908,7 +910,8 @@ h2 {
   background: var(--accent-strong);
 }
 
-.clearButton:hover:not(:disabled) {
+.clearButton:hover:not(:disabled),
+.menuActionButton:hover {
   border-color: var(--accent);
   color: var(--accent-strong);
 }
@@ -917,6 +920,11 @@ h2 {
 .clearButton:disabled {
   cursor: default;
   opacity: 0.6;
+}
+
+.choiceActions > button {
+  width: 100%;
+  padding-inline: 8px;
 }
 
 .explanationPanel {
