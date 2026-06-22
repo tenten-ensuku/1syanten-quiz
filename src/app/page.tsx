@@ -429,8 +429,6 @@ export default function Home() {
   }, [hasLoadedStats, stats]);
 
   const correctShantenCategoryId = getShantenCategoryId(question.shantenTypes);
-  const isShantenCategoryCorrect =
-    selectedShantenCategoryId === correctShantenCategoryId;
   const isTileAnswerCorrect = isSameTileSet(selectedTiles, question.answers);
   const isCorrect = hasSubmitted && isTileAnswerCorrect;
   const explanationAssets = getExplanationAssets(question.shantenTypes);
@@ -1197,6 +1195,11 @@ export default function Home() {
                     tileId={tileId}
                     isSelected={selectedTiles.includes(tileId)}
                     isAnswer={hasSubmitted && question.answers.includes(tileId)}
+                    isIncorrect={
+                      hasSubmitted &&
+                      selectedTiles.includes(tileId) &&
+                      !question.answers.includes(tileId)
+                    }
                     isBlocked={blockedTiles.has(tileId)}
                     isDisabled={hasSubmitted || blockedTiles.has(tileId)}
                     onSelect={handleSelect}
@@ -1238,49 +1241,6 @@ export default function Home() {
           </div>
 
           <p className="answerTime">回答時間 {formatTime(lastAnswerMs)}</p>
-
-          <div className="answerJudgementGrid">
-            <div
-              className={
-                !selectedShantenCategoryId
-                  ? "judgementItem unanswered"
-                  : isShantenCategoryCorrect
-                  ? "judgementItem correct"
-                  : "judgementItem incorrect"
-              }
-            >
-              <span>一向聴タイプ</span>
-              <strong>
-                {!selectedShantenCategoryId
-                  ? "未選択"
-                  : isShantenCategoryCorrect
-                    ? "正解"
-                    : "不正解"}
-              </strong>
-            </div>
-            <div
-              className={
-                isTileAnswerCorrect ? "judgementItem correct" : "judgementItem incorrect"
-              }
-            >
-              <span>受け入れ牌</span>
-              <strong>{isTileAnswerCorrect ? "正解" : "不正解"}</strong>
-            </div>
-          </div>
-
-          <div className="categoryAnswerSummary">
-            <span>正解タイプ</span>
-            <strong>{getShantenCategoryLabel(correctShantenCategoryId)}</strong>
-          </div>
-
-          <div className="answerBlock">
-            <h2>正解牌一覧</h2>
-            <div className="answerTiles">
-              {question.answers.map((tileId) => (
-                <TileView key={`answer-${tileId}`} tileId={tileId} compact />
-              ))}
-            </div>
-          </div>
 
           <div className="explanationBlock">
             <h2>解説</h2>

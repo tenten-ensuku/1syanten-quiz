@@ -8,6 +8,7 @@ type TileButtonProps = {
   tileId: TileId;
   isSelected: boolean;
   isAnswer: boolean;
+  isIncorrect: boolean;
   isBlocked: boolean;
   isDisabled: boolean;
   onSelect: (tileId: TileId) => void;
@@ -18,6 +19,7 @@ export function TileButton({
   tileId,
   isSelected,
   isAnswer,
+  isIncorrect,
   isBlocked,
   isDisabled,
   onSelect,
@@ -28,6 +30,7 @@ export function TileButton({
     "tileChoice",
     isSelected ? "selected" : "",
     isAnswer ? "answer" : "",
+    isIncorrect ? "incorrect" : "",
     isBlocked ? "blocked" : ""
   ]
     .filter(Boolean)
