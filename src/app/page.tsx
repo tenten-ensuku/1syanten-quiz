@@ -1699,34 +1699,6 @@ export default function Home() {
           <h2 id="challenge-title">挑戦</h2>
           <span className="questionCount">全{challengeQuestionIndexes.length}種</span>
         </div>
-        <div className="learningReportCard">
-          <div>
-            <strong>学習申告</strong>
-            <p>
-              本日ここまで：正答数 {todayActivity.correctCount}問　解答数{" "}
-              {todayActivity.answerCount}問　時間 {formatTime(todayActivity.totalMs)}
-            </p>
-            <small>
-              未申告：{todayPendingEffort.correctCount} / {todayPendingEffort.answerCount}問
-            </small>
-          </div>
-          <button
-            type="button"
-            onClick={submitMenuLearningReport}
-            disabled={
-              !settings.nickname.trim() ||
-              todayPendingEffort.answerCount === 0 ||
-              rankingSubmitStatus === "送信中..."
-            }
-          >
-            学習申告
-          </button>
-          {rankingSubmitStatus ? (
-            <p className="rankingSubmitStatus" role="status">
-              {rankingSubmitStatus}
-            </p>
-          ) : null}
-        </div>
         <div className="difficultySelector" aria-label="出題難易度を選択">
           {(["基本", "応用"] as const).map((difficulty) => (
             <label className="difficultyOption" key={difficulty}>
@@ -1794,6 +1766,34 @@ export default function Home() {
           >
             選択タイプで出題
           </button>
+        </div>
+        <div className="learningReportCard">
+          <div>
+            <strong>学習申告</strong>
+            <p>
+              本日ここまで：正答数 {todayActivity.correctCount}問　解答数{" "}
+              {todayActivity.answerCount}問　時間 {formatTime(todayActivity.totalMs)}
+            </p>
+            <small>
+              未申告：{todayPendingEffort.correctCount} / {todayPendingEffort.answerCount}問
+            </small>
+          </div>
+          <button
+            type="button"
+            onClick={submitMenuLearningReport}
+            disabled={
+              !settings.nickname.trim() ||
+              todayPendingEffort.answerCount === 0 ||
+              rankingSubmitStatus === "送信中..."
+            }
+          >
+            学習申告
+          </button>
+          {rankingSubmitStatus ? (
+            <p className="rankingSubmitStatus" role="status">
+              {rankingSubmitStatus}
+            </p>
+          ) : null}
         </div>
       </section>
     );
