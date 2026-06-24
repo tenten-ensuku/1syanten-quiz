@@ -17,18 +17,13 @@ import { HONOR_TILE_IDS, QUIZ_QUESTIONS, ShantenType, TileId } from "@/lib/quizD
 import { createRandomVariant } from "@/lib/quizTransforms";
 import {
   type EffortRankingRow,
-  type RankRankingRow,
-  type RankingCategory,
   type RankingChallengeMode,
   type RankingDifficulty,
   type RankingPeriod,
-  type RankGenre,
   type PendingDailyEffort,
   fetchEffortRankings,
-  fetchRankRankings,
   getJstDateKey,
-  submitDailyEffortEvent,
-  submitRankingResult
+  submitDailyEffortEvent
 } from "@/lib/rankingApi";
 
 type QuestionStats = {
@@ -119,15 +114,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   slideTouchEnabled: true
 };
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-
-const RANK_GENRES: { id: RankGenre; label: string }[] = [
-  { id: "basic-random10", label: "基本10問" },
-  { id: "both-random10", label: "基本+難問10問" },
-  { id: "advanced-random10", label: "難問10問" },
-  { id: "basic-all", label: "基本63問" },
-  { id: "both-all", label: "基本+難問84問" },
-  { id: "advanced-all", label: "難問21問" }
-];
 
 type ExplanationAsset = {
   src: string;
@@ -667,12 +653,8 @@ export default function Home() {
     useState(false);
   const [dailyActivity, setDailyActivity] = useState<DailyActivityByDate>({});
   const [hasLoadedDailyActivity, setHasLoadedDailyActivity] = useState(false);
-  const [rankingCategory, setRankingCategory] =
-    useState<RankingCategory>("effort");
   const [rankingPeriod, setRankingPeriod] = useState<RankingPeriod>("daily");
-  const [rankGenre, setRankGenre] = useState<RankGenre>("basic-random10");
   const [effortRankingRows, setEffortRankingRows] = useState<EffortRankingRow[]>([]);
-  const [rankRankingRows, setRankRankingRows] = useState<RankRankingRow[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [rankingError, setRankingError] = useState("");
   const [rankingSubmitStatus, setRankingSubmitStatus] = useState("");
@@ -767,21 +749,13 @@ export default function Home() {
     let active = true;
     setRankingLoading(true);
     setRankingError("");
-    const request =
-      rankingCategory === "effort"
-        ? fetchEffortRankings(rankingPeriod)
-        : fetchRankRankings(rankingPeriod, rankGenre);
 
-    void request
+    void fetchEffortRankings(rankingPeriod)
       .then((rows) => {
         if (!active) {
           return;
         }
-        if (rankingCategory === "effort") {
-          setEffortRankingRows(rows as EffortRankingRow[]);
-        } else {
-          setRankRankingRows(rows as RankRankingRow[]);
-        }
+        setEffortRankingRows(rows);
       })
       .catch((error) => {
         if (active) {
@@ -799,7 +773,7 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, [menuTab, rankGenre, rankingCategory, rankingPeriod]);
+  }, [menuTab, rankingPeriod]);
 
   const correctShantenCategoryId = getShantenCategoryId(question.shantenTypes);
   const isTileAnswerCorrect = isSameTileSet(selectedTiles, question.answers);
@@ -836,6 +810,17 @@ export default function Home() {
   const dailyActivityRows = Object.entries(dailyActivity)
     .filter(([, activity]) => activity.answerCount > 0)
     .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate));
+  const todayKey = getJstDateKey();
+  const todayActivity = dailyActivity[todayKey] ?? {
+    correctCount: 0,
+    answerCount: 0,
+    totalMs: 0
+  };
+  const todayPendingEffort = pendingDailyEffort[todayKey] ?? {
+    correctCount: 0,
+    answerCount: 0,
+    totalMs: 0
+  };
   const difficultySelectionKey = getDifficultySelectionKey(selectedDifficulties);
   const randomRecordKey = difficultySelectionKey
     ? (`${difficultySelectionKey}:random10` as ChallengeRecordKey)
@@ -1310,53 +1295,29 @@ export default function Home() {
     );
   };
 
-  const submitCompletedResult = async () => {
-    if (!session || session.mode !== "timeAttack" || submittedRunId === session.runId) {
-      return;
-    }
-
+  const submitLearningReport = async (eventId: string) => {
     const nickname = settings.nickname.trim();
     if (!nickname) {
       setRankingSubmitStatus("設定でニックネームを入力してください。");
-      return;
+      return false;
     }
 
-    const questionCount = session.order.length;
-    const mistakeCount = Math.max(0, session.answeredCount - session.correctCount);
-    const score = calculateScore(
-      questionCount,
-      session.correctCount,
-      mistakeCount,
-      session.totalMs
-    );
-    const rank = rankForResult(questionCount, session.correctCount, session.totalMs);
+    const activityDate = getJstDateKey();
+    const pendingEffort = pendingDailyEffort[activityDate] ?? {
+      correctCount: 0,
+      answerCount: 0,
+      totalMs: 0
+    };
+    if (pendingEffort.answerCount === 0) {
+      setRankingSubmitStatus("申告できる新しい学習記録はありません。");
+      return false;
+    }
 
     setRankingSubmitStatus("送信中...");
     try {
-      const deviceId = getDeviceId();
-      const activityDate = getJstDateKey();
-      const pendingEffort = pendingDailyEffort[activityDate] ?? {
-        correctCount: 0,
-        answerCount: 0,
-        totalMs: 0
-      };
-      await submitRankingResult({
-        run_id: session.runId,
-        player_name: nickname,
-        device_id: deviceId,
-        difficulty_mode: session.difficultyMode ?? "both",
-        challenge_mode: session.challengeMode ?? "type_filtered",
-        rank,
-        score,
-        correct_count: session.correctCount,
-        answer_count: questionCount,
-        elapsed_seconds: Number((session.totalMs / 1000).toFixed(2)),
-        average_seconds: Number((session.totalMs / questionCount / 1000).toFixed(2)),
-        client_version: APP_VERSION
-      });
       await submitDailyEffortEvent(
-        session.runId,
-        deviceId,
+        eventId,
+        getDeviceId(),
         nickname,
         activityDate,
         pendingEffort
@@ -1369,15 +1330,31 @@ export default function Home() {
           totalMs: 0
         }
       }));
-      setSubmittedRunId(session.runId);
-      setRankingSubmitStatus("ランキングへ送信しました。");
+      setRankingSubmitStatus("学習記録を申告しました。");
+      return true;
     } catch (error) {
       setRankingSubmitStatus(
         error instanceof Error
           ? `送信に失敗しました。${error.message}`
           : "送信に失敗しました。"
       );
+      return false;
     }
+  };
+
+  const submitCompletedResult = async () => {
+    if (!session || session.mode !== "timeAttack" || submittedRunId === session.runId) {
+      return;
+    }
+
+    const succeeded = await submitLearningReport(session.runId);
+    if (succeeded) {
+      setSubmittedRunId(session.runId);
+    }
+  };
+
+  const submitMenuLearningReport = () => {
+    void submitLearningReport(createRunId());
   };
 
   const renderQuestionList = () => (
@@ -1664,30 +1641,11 @@ export default function Home() {
             <span className="questionCount">上位50名</span>
           </div>
 
-          <div className="rankingCategoryTabs" aria-label="ランキング種目">
-            {(
-              [
-                ["effort", "正答数"],
-                ["rank", "到達ランク"]
-              ] as const
-            ).map(([category, label]) => (
-              <button
-                className={rankingCategory === category ? "active" : ""}
-                key={category}
-                type="button"
-                onClick={() => setRankingCategory(category)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
           <div className="rankingPeriodTabs" aria-label="ランキング期間">
             {(
               [
                 ["daily", "日別"],
-                ["weekly", "週間"],
-                ["all", "歴代"]
+                ["weekly", "週間"]
               ] as const
             ).map(([period, label]) => (
               <button
@@ -1701,36 +1659,15 @@ export default function Home() {
             ))}
           </div>
 
-          {rankingCategory === "rank" ? (
-            <div className="rankGenreGrid" aria-label="到達ランクのジャンル">
-              {RANK_GENRES.map((genre) => (
-                <button
-                  className={rankGenre === genre.id ? "active" : ""}
-                  key={genre.id}
-                  type="button"
-                  onClick={() => setRankGenre(genre.id)}
-                >
-                  {genre.label}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {rankingCategory === "effort" ? (
-            <p className="rankingDescription">
-              正答数は、積み重ねた努力の記録です。
-            </p>
-          ) : (
-            <p className="rankingDescription">
-              期間内に送信した成績のうち、最高到達ランクを表示します。
-            </p>
-          )}
+          <p className="rankingDescription">
+            正答数は、積み重ねた努力の記録です。
+          </p>
 
           {rankingLoading ? (
             <p className="rankingEmpty">読み込み中...</p>
           ) : rankingError ? (
             <p className="rankingEmpty error">ランキングを取得できませんでした。</p>
-          ) : rankingCategory === "effort" ? (
+          ) : (
             effortRankingRows.length > 0 ? (
               <div className="rankingList">
                 {effortRankingRows.map((row, index) => (
@@ -1751,27 +1688,6 @@ export default function Home() {
             ) : (
               <p className="rankingEmpty">まだ投稿がありません。</p>
             )
-          ) : rankRankingRows.length > 0 ? (
-            <div className="rankingList">
-              {rankRankingRows.map((row, index) => (
-                <div className="rankingRow" key={`${row.device_id}-${row.submitted_at}`}>
-                  <strong className="rankingPlace">{index + 1}</strong>
-                  <div className="rankingPlayer">
-                    <strong>{row.player_name}</strong>
-                    <span>
-                      {Number(row.average_seconds).toFixed(2)}秒　{row.answer_count}問
-                    </span>
-                  </div>
-                  <strong
-                    className={`rankingRank ${rankClassName(row.rank as ResultRank)}`}
-                  >
-                    {row.rank}
-                  </strong>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="rankingEmpty">まだ投稿がありません。</p>
           )}
         </section>
       );
@@ -1782,6 +1698,34 @@ export default function Home() {
         <div className="sectionTitleRow">
           <h2 id="challenge-title">挑戦</h2>
           <span className="questionCount">全{challengeQuestionIndexes.length}種</span>
+        </div>
+        <div className="learningReportCard">
+          <div>
+            <strong>学習申告</strong>
+            <p>
+              本日ここまで：正答数 {todayActivity.correctCount}問　解答数{" "}
+              {todayActivity.answerCount}問　時間 {formatTime(todayActivity.totalMs)}
+            </p>
+            <small>
+              未申告：{todayPendingEffort.correctCount} / {todayPendingEffort.answerCount}問
+            </small>
+          </div>
+          <button
+            type="button"
+            onClick={submitMenuLearningReport}
+            disabled={
+              !settings.nickname.trim() ||
+              todayPendingEffort.answerCount === 0 ||
+              rankingSubmitStatus === "送信中..."
+            }
+          >
+            学習申告
+          </button>
+          {rankingSubmitStatus ? (
+            <p className="rankingSubmitStatus" role="status">
+              {rankingSubmitStatus}
+            </p>
+          ) : null}
         </div>
         <div className="difficultySelector" aria-label="出題難易度を選択">
           {(["基本", "応用"] as const).map((difficulty) => (
@@ -1964,10 +1908,10 @@ export default function Home() {
 
         <div className="rankingSubmitCard">
           <div>
-            <strong>ランキングへ送信</strong>
+            <strong>学習申告</strong>
             <p>
               {settings.nickname.trim()
-                ? `${settings.nickname}として、正答数と到達ランクを送信します。`
+                ? "本日のここまでの正答数・解答数・時間を記録送信します。"
                 : "設定でニックネームを入力すると送信できます。"}
             </p>
           </div>
@@ -1976,11 +1920,12 @@ export default function Home() {
             onClick={submitCompletedResult}
             disabled={
               !settings.nickname.trim() ||
+              todayPendingEffort.answerCount === 0 ||
               rankingSubmitStatus === "送信中..." ||
               submittedRunId === session?.runId
             }
           >
-            {submittedRunId === session?.runId ? "送信済み" : "成績を送信"}
+            {submittedRunId === session?.runId ? "申告済み" : "学習申告"}
           </button>
           {rankingSubmitStatus ? (
             <p className="rankingSubmitStatus" role="status">
