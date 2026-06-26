@@ -786,6 +786,8 @@ export default function Home() {
     session?.mode === "timeAttack"
       ? `${session.position + 1} / ${session.order.length}`
       : `${currentBaseIndex + 1} / ${QUIZ_QUESTIONS.length}`;
+  const canUseInlineNextButton =
+    session?.mode === "timeAttack" || currentBaseIndex + 1 < QUIZ_QUESTIONS.length;
   const statValues = Object.values(stats);
   const totalAttempts = statValues.reduce((sum, stat) => sum + stat.attempts, 0);
   const totalCorrect = statValues.reduce((sum, stat) => sum + stat.correct, 0);
@@ -2138,6 +2140,17 @@ export default function Home() {
               {isCorrect ? "正解！" : "不正解"}
             </div>
             <p className="answerTime">回答時間 {formatTime(lastAnswerMs)}</p>
+            {isCorrect && canUseInlineNextButton ? (
+              <button
+                className="nextButton answerNextButton"
+                type="button"
+                onClick={
+                  session?.mode === "timeAttack" ? handleNext : handleNextSingleQuestion
+                }
+              >
+                次の問題へ
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="choiceActions">
