@@ -968,7 +968,7 @@ export default function Home() {
 
   const startAllQuestions = () => {
     startQuestionSet(
-      challengeQuestionIndexes,
+      createShuffledIndexes(challengeQuestionIndexes),
       "全問",
       allRecordKey ?? undefined,
       "all"
