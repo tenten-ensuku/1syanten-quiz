@@ -1646,8 +1646,10 @@ export default function Home() {
           <div className="rankingPeriodTabs" aria-label="ランキング期間">
             {(
               [
-                ["daily", "日別"],
-                ["weekly", "週間"]
+                ["daily", "当日"],
+                ["weekly", "週間"],
+                ["monthly", "月間"],
+                ["all", "歴代"]
               ] as const
             ).map(([period, label]) => (
               <button

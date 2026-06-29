@@ -539,6 +539,38 @@ from (
 ) effort
 group by device_id, date_trunc('week', activity_date)::date;
 
+create or replace view public.iishanten_effort_monthly
+with (security_invoker = true) as
+select
+  device_id,
+  (array_agg(player_name order by sort_time desc))[1] as player_name,
+  date_trunc('month', activity_date)::date as period_key,
+  sum(correct_count)::bigint as correct_count,
+  sum(answer_count)::bigint as answer_count,
+  round(sum(elapsed_seconds) / nullif(sum(answer_count), 0), 2) as average_seconds
+from (
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    updated_at as sort_time
+  from public.iishanten_daily_effort
+  union all
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    submitted_at as sort_time
+  from public.iishanten_effort_events
+) effort
+group by device_id, date_trunc('month', activity_date)::date;
+
 create or replace view public.iishanten_effort_all
 with (security_invoker = true) as
 select
@@ -574,6 +606,7 @@ group by device_id;
 grant select on
   public.iishanten_effort_daily,
   public.iishanten_effort_weekly,
+  public.iishanten_effort_monthly,
   public.iishanten_effort_all
 to anon;
 
@@ -663,3 +696,139 @@ select
   round(sum(elapsed_seconds) / nullif(sum(answer_count), 0), 2) as average_seconds
 from public.iishanten_daily_effort
 group by device_id;
+
+-- Final effort ranking views: aggregate legacy daily snapshots and append-only report events.
+create or replace view public.iishanten_effort_daily
+with (security_invoker = true) as
+select
+  device_id,
+  (array_agg(player_name order by sort_time desc))[1] as player_name,
+  period_key,
+  sum(correct_count)::bigint as correct_count,
+  sum(answer_count)::bigint as answer_count,
+  round(sum(elapsed_seconds) / nullif(sum(answer_count), 0), 2) as average_seconds
+from (
+  select
+    device_id,
+    player_name,
+    activity_date as period_key,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    updated_at as sort_time
+  from public.iishanten_daily_effort
+  union all
+  select
+    device_id,
+    player_name,
+    activity_date as period_key,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    submitted_at as sort_time
+  from public.iishanten_effort_events
+) effort
+group by device_id, period_key;
+
+create or replace view public.iishanten_effort_weekly
+with (security_invoker = true) as
+select
+  device_id,
+  (array_agg(player_name order by sort_time desc))[1] as player_name,
+  date_trunc('week', activity_date)::date as period_key,
+  sum(correct_count)::bigint as correct_count,
+  sum(answer_count)::bigint as answer_count,
+  round(sum(elapsed_seconds) / nullif(sum(answer_count), 0), 2) as average_seconds
+from (
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    updated_at as sort_time
+  from public.iishanten_daily_effort
+  union all
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    submitted_at as sort_time
+  from public.iishanten_effort_events
+) effort
+group by device_id, date_trunc('week', activity_date)::date;
+
+create or replace view public.iishanten_effort_monthly
+with (security_invoker = true) as
+select
+  device_id,
+  (array_agg(player_name order by sort_time desc))[1] as player_name,
+  date_trunc('month', activity_date)::date as period_key,
+  sum(correct_count)::bigint as correct_count,
+  sum(answer_count)::bigint as answer_count,
+  round(sum(elapsed_seconds) / nullif(sum(answer_count), 0), 2) as average_seconds
+from (
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    updated_at as sort_time
+  from public.iishanten_daily_effort
+  union all
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    submitted_at as sort_time
+  from public.iishanten_effort_events
+) effort
+group by device_id, date_trunc('month', activity_date)::date;
+
+create or replace view public.iishanten_effort_all
+with (security_invoker = true) as
+select
+  device_id,
+  (array_agg(player_name order by sort_time desc))[1] as player_name,
+  'all'::text as period_key,
+  sum(correct_count)::bigint as correct_count,
+  sum(answer_count)::bigint as answer_count,
+  round(sum(elapsed_seconds) / nullif(sum(answer_count), 0), 2) as average_seconds
+from (
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    updated_at as sort_time
+  from public.iishanten_daily_effort
+  union all
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    submitted_at as sort_time
+  from public.iishanten_effort_events
+) effort
+group by device_id;
+
+grant select on
+  public.iishanten_effort_daily,
+  public.iishanten_effort_weekly,
+  public.iishanten_effort_monthly,
+  public.iishanten_effort_all
+to anon;

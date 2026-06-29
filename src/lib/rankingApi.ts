@@ -1,4 +1,4 @@
-export type RankingPeriod = "daily" | "weekly" | "all";
+export type RankingPeriod = "daily" | "weekly" | "monthly" | "all";
 export type RankingCategory = "effort" | "rank";
 export type RankingDifficulty = "basic" | "both" | "advanced";
 export type RankingChallengeMode = "random10" | "all" | "type_filtered";
@@ -87,6 +87,8 @@ function getPeriodKey(period: RankingPeriod) {
   if (period === "weekly") {
     const mondayOffset = (utcDate.getUTCDay() + 6) % 7;
     utcDate.setUTCDate(utcDate.getUTCDate() - mondayOffset);
+  } else if (period === "monthly") {
+    utcDate.setUTCDate(1);
   }
   return utcDate.toISOString().slice(0, 10);
 }
