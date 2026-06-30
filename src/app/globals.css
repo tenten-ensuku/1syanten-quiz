@@ -579,7 +579,7 @@ h2 {
 
 .learningReportCard {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px 12px;
   margin: 12px 0;
@@ -617,6 +617,11 @@ h2 {
   background: linear-gradient(180deg, #f4d77c, #d49b36);
   font-weight: 900;
   cursor: pointer;
+}
+
+.learningReportCard .secondaryReportButton {
+  border: 1px solid rgba(154, 103, 31, 0.28);
+  background: #ffffff;
 }
 
 .learningReportCard button:disabled {
@@ -760,6 +765,35 @@ h2 {
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.55;
+}
+
+.settingsCheckRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  font-weight: 900;
+}
+
+.settingsCheckRow input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #1268c8;
+}
+
+.settingsCheckRow small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.settingsCheckRow.disabled {
+  color: var(--muted);
 }
 
 .volumeSlider {

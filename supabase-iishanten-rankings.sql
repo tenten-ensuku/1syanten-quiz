@@ -438,11 +438,28 @@ create table if not exists public.iishanten_effort_events (
     and player_name !~ '[[:cntrl:]]'
   ),
   correct_count integer not null check (correct_count >= 0),
-  answer_count integer not null check (answer_count >= 0),
-  elapsed_seconds numeric(12, 2) not null check (elapsed_seconds >= 0),
+  answer_count integer check (answer_count is null or answer_count >= 0),
+  elapsed_seconds numeric(12, 2) check (elapsed_seconds is null or elapsed_seconds >= 0),
   submitted_at timestamptz not null default now(),
   primary key (device_id, event_id)
 );
+
+alter table public.iishanten_effort_events
+  alter column answer_count drop not null,
+  alter column elapsed_seconds drop not null;
+
+alter table public.iishanten_effort_events
+  drop constraint if exists iishanten_effort_events_answer_count_check,
+  drop constraint if exists iishanten_effort_events_elapsed_seconds_check,
+  drop constraint if exists iishanten_effort_events_correct_answer_check;
+
+alter table public.iishanten_effort_events
+  add constraint iishanten_effort_events_answer_count_check
+  check (answer_count is null or answer_count between 0 and 10000),
+  add constraint iishanten_effort_events_elapsed_seconds_check
+  check (elapsed_seconds is null or elapsed_seconds >= 0),
+  add constraint iishanten_effort_events_correct_answer_check
+  check (answer_count is null or correct_count between 0 and answer_count);
 
 alter table public.iishanten_effort_events enable row level security;
 
@@ -455,6 +472,8 @@ using (true);
 
 drop policy if exists "Anyone can submit iishanten effort events"
 on public.iishanten_effort_events;
+drop policy if exists "Anyone can insert iishanten effort event"
+on public.iishanten_effort_events;
 create policy "Anyone can submit iishanten effort events"
 on public.iishanten_effort_events
 for insert to anon
@@ -462,9 +481,10 @@ with check (
   char_length(device_id) between 4 and 64
   and char_length(player_name) between 1 and 12
   and activity_date between (current_date - 1) and (current_date + 1)
-  and correct_count between 0 and answer_count
-  and answer_count between 0 and 10000
-  and elapsed_seconds >= 0
+  and correct_count between 0 and 10000
+  and (answer_count is null or answer_count between 0 and 10000)
+  and (answer_count is null or correct_count between 0 and answer_count)
+  and (elapsed_seconds is null or elapsed_seconds >= 0)
 );
 
 grant select, insert on public.iishanten_effort_events to anon;

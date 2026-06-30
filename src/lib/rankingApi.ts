@@ -31,12 +31,17 @@ export type PendingDailyEffort = {
   totalMs: number;
 };
 
+export type LearningReportOptions = {
+  includeAnswerCount: boolean;
+  includeTime: boolean;
+};
+
 export type EffortRankingRow = {
   device_id: string;
   player_name: string;
   correct_count: number;
-  answer_count: number;
-  average_seconds: number;
+  answer_count: number | null;
+  average_seconds: number | null;
 };
 
 export type RankRankingRow = {
@@ -131,12 +136,14 @@ export async function submitDailyEffortEvent(
   deviceId: string,
   playerName: string,
   activityDate: string,
-  pending: PendingDailyEffort
+  pending: PendingDailyEffort,
+  options: LearningReportOptions
 ) {
   if (pending.answerCount === 0) {
     return;
   }
 
+  const answerCount = options.includeAnswerCount ? pending.answerCount : null;
   await supabaseRequest("iishanten_effort_events", {
     method: "POST",
     headers: {
@@ -148,8 +155,11 @@ export async function submitDailyEffortEvent(
       activity_date: activityDate,
       player_name: playerName,
       correct_count: pending.correctCount,
-      answer_count: pending.answerCount,
-      elapsed_seconds: Number((pending.totalMs / 1000).toFixed(2))
+      answer_count: answerCount,
+      elapsed_seconds:
+        options.includeTime && answerCount !== null
+          ? Number((pending.totalMs / 1000).toFixed(2))
+          : null
     })
   });
 }
@@ -159,7 +169,7 @@ export async function fetchEffortRankings(period: RankingPeriod) {
   const periodKey = getPeriodKey(period);
   const query = new URLSearchParams({
     select: "device_id,player_name,correct_count,answer_count,average_seconds",
-    order: "correct_count.desc,answer_count.desc,average_seconds.asc",
+    order: "correct_count.desc,answer_count.desc.nullslast,average_seconds.asc.nullslast",
     limit: "50"
   });
   if (periodKey) {

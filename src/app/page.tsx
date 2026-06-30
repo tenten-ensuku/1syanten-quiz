@@ -17,6 +17,7 @@ import { HONOR_TILE_IDS, QUIZ_QUESTIONS, ShantenType, TileId } from "@/lib/quizD
 import { createRandomVariant } from "@/lib/quizTransforms";
 import {
   type EffortRankingRow,
+  type LearningReportOptions,
   type RankingChallengeMode,
   type RankingDifficulty,
   type RankingPeriod,
@@ -81,6 +82,8 @@ type AppSettings = {
   nickname: string;
   volume: number;
   slideTouchEnabled: boolean;
+  reportAnswerCount: boolean;
+  reportTime: boolean;
 };
 type PendingDailyEffortByDate = Record<string, PendingDailyEffort>;
 type DailyActivityByDate = Record<string, PendingDailyEffort>;
@@ -111,7 +114,9 @@ const BACKUP_STORAGE_KEYS = [
 const DEFAULT_SETTINGS: AppSettings = {
   nickname: "",
   volume: 3,
-  slideTouchEnabled: true
+  slideTouchEnabled: true,
+  reportAnswerCount: true,
+  reportTime: true
 };
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -286,7 +291,15 @@ function loadSettings(): AppSettings {
       slideTouchEnabled:
         typeof parsed.slideTouchEnabled === "boolean"
           ? parsed.slideTouchEnabled
-          : DEFAULT_SETTINGS.slideTouchEnabled
+          : DEFAULT_SETTINGS.slideTouchEnabled,
+      reportAnswerCount:
+        typeof parsed.reportAnswerCount === "boolean"
+          ? parsed.reportAnswerCount
+          : DEFAULT_SETTINGS.reportAnswerCount,
+      reportTime:
+        typeof parsed.reportTime === "boolean"
+          ? parsed.reportTime
+          : DEFAULT_SETTINGS.reportTime
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -391,6 +404,14 @@ function formatRate(stat: QuestionStats) {
 
 function formatTime(ms: number) {
   return `${(ms / 1000).toFixed(2)}秒`;
+}
+
+function formatNullableCount(count: number | null) {
+  return typeof count === "number" ? `${count}問` : "-";
+}
+
+function formatNullableSeconds(seconds: number | null) {
+  return typeof seconds === "number" ? `${Number(seconds).toFixed(2)}秒` : "-";
 }
 
 function formatAverageCorrectTime(stat: QuestionStats) {
@@ -1297,7 +1318,13 @@ export default function Home() {
     );
   };
 
-  const submitLearningReport = async (eventId: string) => {
+  const submitLearningReport = async (
+    eventId: string,
+    reportOptions: LearningReportOptions = {
+      includeAnswerCount: settings.reportAnswerCount,
+      includeTime: settings.reportAnswerCount && settings.reportTime
+    }
+  ) => {
     const nickname = settings.nickname.trim();
     if (!nickname) {
       setRankingSubmitStatus("設定でニックネームを入力してください。");
@@ -1322,7 +1349,8 @@ export default function Home() {
         getDeviceId(),
         nickname,
         activityDate,
-        pendingEffort
+        pendingEffort,
+        reportOptions
       );
       setPendingDailyEffort((current) => ({
         ...current,
@@ -1332,7 +1360,11 @@ export default function Home() {
           totalMs: 0
         }
       }));
-      setRankingSubmitStatus("学習記録を申告しました。");
+      setRankingSubmitStatus(
+        reportOptions.includeAnswerCount
+          ? "学習記録を申告しました。"
+          : "正答数のみ申告しました。"
+      );
       return true;
     } catch (error) {
       setRankingSubmitStatus(
@@ -1357,6 +1389,13 @@ export default function Home() {
 
   const submitMenuLearningReport = () => {
     void submitLearningReport(createRunId());
+  };
+
+  const submitCorrectCountOnlyReport = () => {
+    void submitLearningReport(createRunId(), {
+      includeAnswerCount: false,
+      includeTime: false
+    });
   };
 
   const renderQuestionList = () => (
@@ -1606,6 +1645,49 @@ export default function Home() {
             </button>
           </div>
 
+          <div className="settingsGroup">
+            <span className="settingsLabel">送信データ</span>
+            <p className="settingsHelp">
+              正答数はランキング集計に必須です。解答数と時間は送信しない選択ができます。
+            </p>
+            <label className="settingsCheckRow disabled">
+              <input type="checkbox" checked disabled />
+              <span>正解数</span>
+              <small>必須</small>
+            </label>
+            <label className="settingsCheckRow">
+              <input
+                type="checkbox"
+                checked={settings.reportAnswerCount}
+                onChange={(event) => {
+                  const reportAnswerCount = event.target.checked;
+                  setSettings((current) => ({
+                    ...current,
+                    reportAnswerCount,
+                    reportTime: reportAnswerCount ? current.reportTime : false
+                  }));
+                }}
+              />
+              <span>解答数</span>
+              <small>任意</small>
+            </label>
+            <label className={settings.reportAnswerCount ? "settingsCheckRow" : "settingsCheckRow disabled"}>
+              <input
+                type="checkbox"
+                checked={settings.reportAnswerCount && settings.reportTime}
+                disabled={!settings.reportAnswerCount}
+                onChange={(event) =>
+                  setSettings((current) => ({
+                    ...current,
+                    reportTime: event.target.checked
+                  }))
+                }
+              />
+              <span>時間</span>
+              <small>任意</small>
+            </label>
+          </div>
+
           <div className="settingsGroup backupGroup">
             <span className="settingsLabel">データ引継ぎ</span>
             <p className="settingsHelp">
@@ -1682,9 +1764,11 @@ export default function Home() {
                     <strong className="rankingPlace">{index + 1}</strong>
                     <strong className="rankingEffortName">{row.player_name}</strong>
                     <strong className="rankingEffortValue">{row.correct_count}問</strong>
-                    <span className="rankingEffortDetail">解答数 {row.answer_count}問</span>
                     <span className="rankingEffortDetail">
-                      {Number(row.average_seconds).toFixed(2)}秒
+                      解答数 {formatNullableCount(row.answer_count)}
+                    </span>
+                    <span className="rankingEffortDetail">
+                      {formatNullableSeconds(row.average_seconds)}
                     </span>
                   </div>
                 ))}
@@ -1792,6 +1876,18 @@ export default function Home() {
             }
           >
             学習申告
+          </button>
+          <button
+            className="secondaryReportButton"
+            type="button"
+            onClick={submitCorrectCountOnlyReport}
+            disabled={
+              !settings.nickname.trim() ||
+              todayPendingEffort.answerCount === 0 ||
+              rankingSubmitStatus === "送信中..."
+            }
+          >
+            正答数のみ申告
           </button>
           {rankingSubmitStatus ? (
             <p className="rankingSubmitStatus" role="status">
@@ -1915,7 +2011,7 @@ export default function Home() {
             <strong>学習申告</strong>
             <p>
               {settings.nickname.trim()
-                ? "本日のここまでの正答数・解答数・時間を記録送信します。"
+                ? "本日のここまでの学習記録を設定内容で送信します。"
                 : "設定でニックネームを入力すると送信できます。"}
             </p>
           </div>
