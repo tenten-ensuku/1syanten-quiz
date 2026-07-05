@@ -36,6 +36,7 @@ type QuestionStats = {
 };
 
 type StatsByQuestion = Record<string, QuestionStats>;
+type MistakeClearMarkers = Record<string, number>;
 
 type ResultRank = "神" | "SS" | "S" | "A" | "B" | "C" | "D" | "E" | "F";
 type ShantenCategoryId = "two-meld" | "headless-1" | "headless-2" | "floating";
@@ -99,6 +100,7 @@ type TypeFilterOption = {
 
 const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
 const FAVORITES_STORAGE_KEY = "iishanten-quiz-favorites-v1";
+const MISTAKE_CLEAR_MARKERS_STORAGE_KEY = "iishanten-quiz-mistake-clear-markers-v1";
 const CHALLENGE_RECORDS_STORAGE_KEY = "iishanten-quiz-challenge-records-v1";
 const SETTINGS_STORAGE_KEY = "iishanten-quiz-settings-v1";
 const DEVICE_ID_STORAGE_KEY = "iishanten-quiz-device-id-v1";
@@ -107,6 +109,7 @@ const DAILY_ACTIVITY_STORAGE_KEY = "iishanten-quiz-daily-activity-v1";
 const BACKUP_STORAGE_KEYS = [
   STATS_STORAGE_KEY,
   FAVORITES_STORAGE_KEY,
+  MISTAKE_CLEAR_MARKERS_STORAGE_KEY,
   CHALLENGE_RECORDS_STORAGE_KEY,
   SETTINGS_STORAGE_KEY,
   DEVICE_ID_STORAGE_KEY,
@@ -259,6 +262,19 @@ function loadFavorites(): string[] {
     return rawFavorites ? (JSON.parse(rawFavorites) as string[]) : [];
   } catch {
     return [];
+  }
+}
+
+function loadMistakeClearMarkers(): MistakeClearMarkers {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const rawMarkers = window.localStorage.getItem(MISTAKE_CLEAR_MARKERS_STORAGE_KEY);
+    return rawMarkers ? (JSON.parse(rawMarkers) as MistakeClearMarkers) : {};
+  } catch {
+    return {};
   }
 }
 
@@ -677,6 +693,8 @@ export default function Home() {
   const [hasLoadedStats, setHasLoadedStats] = useState(false);
   const [favoriteQuestionIds, setFavoriteQuestionIds] = useState<string[]>([]);
   const [hasLoadedFavorites, setHasLoadedFavorites] = useState(false);
+  const [mistakeClearMarkers, setMistakeClearMarkers] = useState<MistakeClearMarkers>({});
+  const [hasLoadedMistakeClearMarkers, setHasLoadedMistakeClearMarkers] = useState(false);
   const [challengeRecords, setChallengeRecords] = useState<ChallengeRecords>({});
   const [hasLoadedChallengeRecords, setHasLoadedChallengeRecords] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
@@ -709,6 +727,8 @@ export default function Home() {
     setHasLoadedStats(true);
     setFavoriteQuestionIds(loadFavorites());
     setHasLoadedFavorites(true);
+    setMistakeClearMarkers(loadMistakeClearMarkers());
+    setHasLoadedMistakeClearMarkers(true);
     setChallengeRecords(loadChallengeRecords());
     setHasLoadedChallengeRecords(true);
     const loadedSettings = loadSettings();
@@ -735,6 +755,15 @@ export default function Home() {
       );
     }
   }, [favoriteQuestionIds, hasLoadedFavorites]);
+
+  useEffect(() => {
+    if (hasLoadedMistakeClearMarkers) {
+      window.localStorage.setItem(
+        MISTAKE_CLEAR_MARKERS_STORAGE_KEY,
+        JSON.stringify(mistakeClearMarkers)
+      );
+    }
+  }, [hasLoadedMistakeClearMarkers, mistakeClearMarkers]);
 
   useEffect(() => {
     if (hasLoadedChallengeRecords) {
@@ -903,15 +932,21 @@ export default function Home() {
     }
     return left.index - right.index;
   });
-  const reviewQuestionEntries = QUIZ_QUESTIONS.map((baseQuestion, index) => ({
+  const mistakeQuestionEntries = QUIZ_QUESTIONS.map((baseQuestion, index) => ({
     baseQuestion,
     index,
     stat: getStats(stats, baseQuestion.id)
-  })).filter(({ baseQuestion, stat }) =>
-    reviewMode === "mistakes"
-      ? stat.attempts - stat.correct > 0
-      : favoriteQuestionIds.includes(baseQuestion.id)
-  );
+  })).filter(({ baseQuestion, stat }) => {
+    const mistakeCount = Math.max(0, stat.attempts - stat.correct);
+    return mistakeCount > (mistakeClearMarkers[baseQuestion.id] ?? 0);
+  });
+  const favoriteQuestionEntries = QUIZ_QUESTIONS.map((baseQuestion, index) => ({
+    baseQuestion,
+    index,
+    stat: getStats(stats, baseQuestion.id)
+  })).filter(({ baseQuestion }) => favoriteQuestionIds.includes(baseQuestion.id));
+  const reviewQuestionEntries =
+    reviewMode === "mistakes" ? mistakeQuestionEntries : favoriteQuestionEntries;
   const difficultyCounts = {
     基本: QUIZ_QUESTIONS.filter((question) => question.difficulty === "基本").length,
     応用: QUIZ_QUESTIONS.filter((question) => question.difficulty === "応用").length
@@ -1042,6 +1077,34 @@ export default function Home() {
       allRecordKey ?? undefined,
       "all"
     );
+  };
+
+  const startMistakeReview = () => {
+    if (mistakeQuestionEntries.length === 0) {
+      return;
+    }
+
+    startQuestionSet(
+      mistakeQuestionEntries.map(({ index }) => index),
+      "誤答履歴"
+    );
+  };
+
+  const clearMistakeHistory = () => {
+    if (mistakeQuestionEntries.length === 0) {
+      return;
+    }
+    if (!window.confirm("誤答履歴を空にしますか？ 正答率などの記録は残ります。")) {
+      return;
+    }
+
+    setMistakeClearMarkers((current) => {
+      const next = { ...current };
+      for (const { baseQuestion, stat } of mistakeQuestionEntries) {
+        next[baseQuestion.id] = Math.max(0, stat.attempts - stat.correct);
+      }
+      return next;
+    });
   };
 
   const toggleTypeFilter = (filterId: string) => {
@@ -1193,6 +1256,7 @@ export default function Home() {
       entries.forEach(([key, value]) => window.localStorage.setItem(key, value as string));
       setStats(loadStats());
       setFavoriteQuestionIds(loadFavorites());
+      setMistakeClearMarkers(loadMistakeClearMarkers());
       setChallengeRecords(loadChallengeRecords());
       setPendingDailyEffort(loadPendingDailyEffort());
       setDailyActivity(loadDailyActivity());
@@ -1541,6 +1605,26 @@ export default function Home() {
           お気に入り
         </button>
       </div>
+      {reviewMode === "mistakes" ? (
+        <div className="reviewActions">
+          <button
+            className="submitButton"
+            type="button"
+            onClick={startMistakeReview}
+            disabled={mistakeQuestionEntries.length === 0}
+          >
+            誤答履歴をまとめて解きなおす
+          </button>
+          <button
+            className="clearButton"
+            type="button"
+            onClick={clearMistakeHistory}
+            disabled={mistakeQuestionEntries.length === 0}
+          >
+            誤答履歴を空にする
+          </button>
+        </div>
+      ) : null}
       {reviewQuestionEntries.length > 0 ? (
         <div className="questionList">
           {reviewQuestionEntries.map(({ baseQuestion, index, stat }) => {
