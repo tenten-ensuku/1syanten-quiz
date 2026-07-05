@@ -3,6 +3,8 @@
 import {
   type ChangeEvent,
   type CSSProperties,
+  type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
   useEffect,
   useRef,
@@ -927,6 +929,40 @@ export default function Home() {
     );
   };
 
+  const renderFavoriteButton = (questionId: string) => {
+    const isFavorite = favoriteQuestionIds.includes(questionId);
+    return (
+      <button
+        className={isFavorite ? "favoriteButton active" : "favoriteButton"}
+        type="button"
+        aria-pressed={isFavorite}
+        aria-label={
+          isFavorite
+            ? `問題 ${questionId}をお気に入りから外す`
+            : `問題 ${questionId}をお気に入りに追加`
+        }
+        title={isFavorite ? "お気に入りから外す" : "お気に入りに追加"}
+        onClick={(event: MouseEvent<HTMLButtonElement>) => {
+          event.stopPropagation();
+          toggleFavorite(questionId);
+        }}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        {isFavorite ? "★" : "☆"}
+      </button>
+    );
+  };
+
+  const handleQuestionListKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+    startQuestion: () => void
+  ) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      startQuestion();
+    }
+  };
+
   const loadQuestion = (baseIndex: number) => {
     setQuestion(createRandomVariant(QUIZ_QUESTIONS[baseIndex]));
     setSelectedTiles([]);
@@ -1425,12 +1461,15 @@ export default function Home() {
       </div>
       <div className="questionList">
         {sortedQuestionEntries.map(({ baseQuestion, index, stat }) => {
+          const startQuestion = () => startSingleQuestion(index);
           return (
-            <button
+            <div
               className="questionListItem"
               key={baseQuestion.id}
-              type="button"
-              onClick={() => startSingleQuestion(index)}
+              role="button"
+              tabIndex={0}
+              onClick={startQuestion}
+              onKeyDown={(event) => handleQuestionListKeyDown(event, startQuestion)}
             >
               <span className="problemId">{baseQuestion.id}</span>
               <span
@@ -1450,7 +1489,8 @@ export default function Home() {
                 正答率 {formatRate(stat)}（{stat.correct}/{stat.attempts}）　
                 {formatQuestionListTime(stat)}
               </span>
-            </button>
+              {renderFavoriteButton(baseQuestion.id)}
+            </div>
           );
         })}
       </div>
@@ -1483,33 +1523,39 @@ export default function Home() {
       </div>
       {reviewQuestionEntries.length > 0 ? (
         <div className="questionList">
-          {reviewQuestionEntries.map(({ baseQuestion, index, stat }) => (
-            <button
-              className="questionListItem"
-              key={`review-${baseQuestion.id}`}
-              type="button"
-              onClick={() => startSingleQuestion(index)}
-            >
-              <span className="problemId">{baseQuestion.id}</span>
-              <span
-                className="problemTiles"
-                aria-label={baseQuestion.source}
-                style={{ "--problem-tile-count": baseQuestion.hand.length } as CSSProperties}
+          {reviewQuestionEntries.map(({ baseQuestion, index, stat }) => {
+            const startQuestion = () => startSingleQuestion(index);
+            return (
+              <div
+                className="questionListItem"
+                key={`review-${baseQuestion.id}`}
+                role="button"
+                tabIndex={0}
+                onClick={startQuestion}
+                onKeyDown={(event) => handleQuestionListKeyDown(event, startQuestion)}
               >
-                {baseQuestion.hand.map((tileId, tileIndex) => (
-                  <TileView
-                    key={`review-${baseQuestion.id}-${tileId}-${tileIndex}`}
-                    tileId={tileId}
-                    compact
-                  />
-                ))}
-              </span>
-              <span className="statPill questionListStats">
-                正答率 {formatRate(stat)}（{stat.correct}/{stat.attempts}）　
-                {formatQuestionListTime(stat)}
-              </span>
-            </button>
-          ))}
+                <span className="problemId">{baseQuestion.id}</span>
+                <span
+                  className="problemTiles"
+                  aria-label={baseQuestion.source}
+                  style={{ "--problem-tile-count": baseQuestion.hand.length } as CSSProperties}
+                >
+                  {baseQuestion.hand.map((tileId, tileIndex) => (
+                    <TileView
+                      key={`review-${baseQuestion.id}-${tileId}-${tileIndex}`}
+                      tileId={tileId}
+                      compact
+                    />
+                  ))}
+                </span>
+                <span className="statPill questionListStats">
+                  正答率 {formatRate(stat)}（{stat.correct}/{stat.attempts}）　
+                  {formatQuestionListTime(stat)}
+                </span>
+                {renderFavoriteButton(baseQuestion.id)}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <p className="reviewEmpty">
@@ -2048,28 +2094,7 @@ export default function Home() {
                   <div className="wrongQuestionItem" key={`${item.questionId}-${index}`}>
                     <div className="wrongQuestionTitle">
                       <strong>問題 {item.questionId}</strong>
-                      <button
-                        className={
-                          favoriteQuestionIds.includes(item.questionId)
-                            ? "favoriteButton active"
-                            : "favoriteButton"
-                        }
-                        type="button"
-                        aria-pressed={favoriteQuestionIds.includes(item.questionId)}
-                        aria-label={
-                          favoriteQuestionIds.includes(item.questionId)
-                            ? `問題 ${item.questionId}をお気に入りから外す`
-                            : `問題 ${item.questionId}をお気に入りに追加`
-                        }
-                        title={
-                          favoriteQuestionIds.includes(item.questionId)
-                            ? "お気に入りから外す"
-                            : "お気に入りに追加"
-                        }
-                        onClick={() => toggleFavorite(item.questionId)}
-                      >
-                        {favoriteQuestionIds.includes(item.questionId) ? "★" : "☆"}
-                      </button>
+                      {renderFavoriteButton(item.questionId)}
                     </div>
                     <div
                       className="wrongQuestionTiles"
@@ -2136,7 +2161,10 @@ export default function Home() {
       <section className="panel questionPanel" aria-labelledby="question-title">
         <div className="sectionTitleRow">
           <h2 id="question-title">問題 {question.id}</h2>
-          <span className="questionCount">{currentProgress}</span>
+          <div className="sectionTitleActions">
+            <span className="questionCount">{currentProgress}</span>
+            {renderFavoriteButton(question.id)}
+          </div>
         </div>
 
         <div className="handArea" aria-label="問題の牌姿">
@@ -2277,7 +2305,10 @@ export default function Home() {
       {hasSubmitted && (
         <section className="panel explanationPanel">
           <div className="explanationBlock">
-            <h2>解説</h2>
+            <div className="explanationTitleRow">
+              <h2>解説</h2>
+              {renderFavoriteButton(question.id)}
+            </div>
             <div
               className="explanationHandTiles"
               aria-label="問題の牌姿"
