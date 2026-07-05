@@ -218,8 +218,8 @@ def main() -> None:
             }
         )
 
-    if len(questions) != 84:
-        raise ValueError(f"Expected 84 questions, found {len(questions)}")
+    if not questions:
+        raise ValueError("No questions found in source sheet")
 
     prefix = existing_source.split("export const QUIZ_QUESTIONS", maxsplit=1)[0]
     rendered_questions = ",\n".join(render_question(question) for question in questions)
