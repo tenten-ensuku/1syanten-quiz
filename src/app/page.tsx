@@ -1107,6 +1107,17 @@ export default function Home() {
     });
   };
 
+  const clearFavorites = () => {
+    if (favoriteQuestionEntries.length === 0) {
+      return;
+    }
+    if (!window.confirm("お気に入りを空にしますか？")) {
+      return;
+    }
+
+    setFavoriteQuestionIds([]);
+  };
+
   const toggleTypeFilter = (filterId: string) => {
     setSelectedTypeFilterIds((current) =>
       current.includes(filterId)
@@ -1624,7 +1635,18 @@ export default function Home() {
             誤答履歴を空にする
           </button>
         </div>
-      ) : null}
+      ) : (
+        <div className="reviewActions single">
+          <button
+            className="clearButton"
+            type="button"
+            onClick={clearFavorites}
+            disabled={favoriteQuestionEntries.length === 0}
+          >
+            お気に入りを空にする
+          </button>
+        </div>
+      )}
       {reviewQuestionEntries.length > 0 ? (
         <div className="questionList">
           {reviewQuestionEntries.map(({ baseQuestion, index, stat }) => {
