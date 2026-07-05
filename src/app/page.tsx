@@ -379,6 +379,18 @@ function getDifficultySelectionKey(
   return null;
 }
 
+function getQuestionIndexesForDifficultyMode(difficultyMode: RankingDifficulty) {
+  return QUIZ_QUESTIONS.map((baseQuestion, index) => {
+    if (difficultyMode === "basic") {
+      return baseQuestion.difficulty === "基本" ? index : -1;
+    }
+    if (difficultyMode === "advanced") {
+      return baseQuestion.difficulty === "応用" ? index : -1;
+    }
+    return index;
+  }).filter((index) => index >= 0);
+}
+
 function isBetterChallengeRecord(candidate: ChallengeRecord, current?: ChallengeRecord) {
   if (!current) {
     return true;
@@ -1346,8 +1358,16 @@ export default function Home() {
       return;
     }
 
+    const retryOrder =
+      session.challengeMode === "random10"
+        ? createShuffledIndexes(
+            getQuestionIndexesForDifficultyMode(session.difficultyMode ?? "both"),
+            10
+          )
+        : createShuffledIndexes(session.order);
+
     startQuestionSet(
-      createShuffledIndexes(session.order),
+      retryOrder,
       session.label ?? "もう一度",
       session.recordKey,
       session.challengeMode
