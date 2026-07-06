@@ -954,10 +954,6 @@ h2 {
   margin-bottom: 10px;
 }
 
-.reviewActions.single {
-  grid-template-columns: minmax(220px, 320px);
-}
-
 .reviewEmpty {
   margin-bottom: 0;
   padding: 20px;

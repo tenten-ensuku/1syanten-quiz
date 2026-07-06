@@ -1090,6 +1090,17 @@ export default function Home() {
     );
   };
 
+  const startFavoriteReview = () => {
+    if (favoriteQuestionEntries.length === 0) {
+      return;
+    }
+
+    startQuestionSet(
+      favoriteQuestionEntries.map(({ index }) => index),
+      "お気に入り"
+    );
+  };
+
   const clearMistakeHistory = () => {
     if (mistakeQuestionEntries.length === 0) {
       return;
@@ -1636,7 +1647,15 @@ export default function Home() {
           </button>
         </div>
       ) : (
-        <div className="reviewActions single">
+        <div className="reviewActions">
+          <button
+            className="submitButton"
+            type="button"
+            onClick={startFavoriteReview}
+            disabled={favoriteQuestionEntries.length === 0}
+          >
+            お気に入りをまとめて解きなおす
+          </button>
           <button
             className="clearButton"
             type="button"
