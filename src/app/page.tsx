@@ -1920,8 +1920,8 @@ export default function Home() {
             {(
               [
                 ["daily", "当日"],
-                ["weekly", "週間"],
-                ["monthly", "月間"],
+                ["weekly", "7日間"],
+                ["monthly", "30日間"],
                 ["all", "歴代"]
               ] as const
             ).map(([period, label]) => (
