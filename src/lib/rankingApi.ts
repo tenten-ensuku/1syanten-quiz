@@ -157,8 +157,8 @@ export async function submitDailyEffortEvent(
       activity_date: activityDate,
       player_name: playerName,
       correct_count: pending.correctCount,
-      answer_count: null,
-      elapsed_seconds: null
+      answer_count: pending.answerCount,
+      elapsed_seconds: Number((pending.totalMs / 1000).toFixed(2))
     })
   });
 }

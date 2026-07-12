@@ -466,14 +466,6 @@ function formatTime(ms: number) {
   return `${(ms / 1000).toFixed(2)}秒`;
 }
 
-function formatNullableCount(count: number | null) {
-  return typeof count === "number" ? `${count}問` : "-";
-}
-
-function formatNullableSeconds(seconds: number | null) {
-  return typeof seconds === "number" ? `${Number(seconds).toFixed(2)}秒` : "-";
-}
-
 function formatAverageCorrectTime(stat: QuestionStats) {
   if (stat.correct === 0) {
     return "－";
@@ -2011,12 +2003,6 @@ export default function Home() {
                     <strong className="rankingPlace">{index + 1}</strong>
                     <strong className="rankingEffortName">{row.player_name}</strong>
                     <strong className="rankingEffortValue">{row.correct_count}問</strong>
-                    <span className="rankingEffortDetail">
-                      解答数 {formatNullableCount(row.answer_count)}
-                    </span>
-                    <span className="rankingEffortDetail">
-                      {formatNullableSeconds(row.average_seconds)}
-                    </span>
                   </div>
                 ))}
               </div>
