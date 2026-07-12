@@ -630,6 +630,181 @@ grant select on
   public.iishanten_effort_all
 to anon;
 
+-- Rank records keep the rate explicitly and separate leaderboards by question count.
+alter table public.iishanten_ranking_submissions
+add column if not exists correct_rate numeric(5, 2)
+generated always as (
+  round(correct_count::numeric * 100 / nullif(answer_count, 0), 2)
+) stored;
+
+drop view if exists
+  public.iishanten_rank_daily,
+  public.iishanten_rank_weekly,
+  public.iishanten_rank_monthly,
+  public.iishanten_rank_all;
+
+create or replace view public.iishanten_rank_daily
+with (security_invoker = true) as
+select * from (
+  select
+    device_id,
+    player_name,
+    (submitted_at at time zone 'Asia/Tokyo')::date as period_key,
+    rank,
+    score,
+    correct_count,
+    correct_rate,
+    elapsed_seconds,
+    average_seconds,
+    answer_count,
+    difficulty_mode,
+    challenge_mode,
+    submitted_at,
+    row_number() over (
+      partition by
+        device_id,
+        (submitted_at at time zone 'Asia/Tokyo')::date,
+        difficulty_mode,
+        challenge_mode,
+        answer_count
+      order by
+        case rank
+          when '神' then 9 when 'SS' then 8 when 'S' then 7
+          when 'A' then 6 when 'B' then 5 when 'C' then 4
+          when 'D' then 3 when 'E' then 2 else 1
+        end desc,
+        correct_rate desc,
+        average_seconds asc,
+        score desc,
+        submitted_at asc
+    ) as player_row
+  from public.iishanten_ranking_submissions
+  where challenge_mode in ('random10', 'all')
+) ranked
+where player_row = 1;
+
+create or replace view public.iishanten_rank_weekly
+with (security_invoker = true) as
+select * from (
+  select
+    device_id,
+    player_name,
+    date_trunc('week', submitted_at at time zone 'Asia/Tokyo')::date as period_key,
+    rank,
+    score,
+    correct_count,
+    correct_rate,
+    elapsed_seconds,
+    average_seconds,
+    answer_count,
+    difficulty_mode,
+    challenge_mode,
+    submitted_at,
+    row_number() over (
+      partition by
+        device_id,
+        date_trunc('week', submitted_at at time zone 'Asia/Tokyo')::date,
+        difficulty_mode,
+        challenge_mode,
+        answer_count
+      order by
+        case rank
+          when '神' then 9 when 'SS' then 8 when 'S' then 7
+          when 'A' then 6 when 'B' then 5 when 'C' then 4
+          when 'D' then 3 when 'E' then 2 else 1
+        end desc,
+        correct_rate desc,
+        average_seconds asc,
+        score desc,
+        submitted_at asc
+    ) as player_row
+  from public.iishanten_ranking_submissions
+  where challenge_mode in ('random10', 'all')
+) ranked
+where player_row = 1;
+
+create or replace view public.iishanten_rank_monthly
+with (security_invoker = true) as
+select * from (
+  select
+    device_id,
+    player_name,
+    date_trunc('month', submitted_at at time zone 'Asia/Tokyo')::date as period_key,
+    rank,
+    score,
+    correct_count,
+    correct_rate,
+    elapsed_seconds,
+    average_seconds,
+    answer_count,
+    difficulty_mode,
+    challenge_mode,
+    submitted_at,
+    row_number() over (
+      partition by
+        device_id,
+        date_trunc('month', submitted_at at time zone 'Asia/Tokyo')::date,
+        difficulty_mode,
+        challenge_mode,
+        answer_count
+      order by
+        case rank
+          when '神' then 9 when 'SS' then 8 when 'S' then 7
+          when 'A' then 6 when 'B' then 5 when 'C' then 4
+          when 'D' then 3 when 'E' then 2 else 1
+        end desc,
+        correct_rate desc,
+        average_seconds asc,
+        score desc,
+        submitted_at asc
+    ) as player_row
+  from public.iishanten_ranking_submissions
+  where challenge_mode in ('random10', 'all')
+) ranked
+where player_row = 1;
+
+create or replace view public.iishanten_rank_all
+with (security_invoker = true) as
+select * from (
+  select
+    device_id,
+    player_name,
+    'all'::text as period_key,
+    rank,
+    score,
+    correct_count,
+    correct_rate,
+    elapsed_seconds,
+    average_seconds,
+    answer_count,
+    difficulty_mode,
+    challenge_mode,
+    submitted_at,
+    row_number() over (
+      partition by device_id, difficulty_mode, challenge_mode, answer_count
+      order by
+        case rank
+          when '神' then 9 when 'SS' then 8 when 'S' then 7
+          when 'A' then 6 when 'B' then 5 when 'C' then 4
+          when 'D' then 3 when 'E' then 2 else 1
+        end desc,
+        correct_rate desc,
+        average_seconds asc,
+        score desc,
+        submitted_at asc
+    ) as player_row
+  from public.iishanten_ranking_submissions
+  where challenge_mode in ('random10', 'all')
+) ranked
+where player_row = 1;
+
+grant select on
+  public.iishanten_rank_daily,
+  public.iishanten_rank_weekly,
+  public.iishanten_rank_monthly,
+  public.iishanten_rank_all
+to anon;
+
 alter table public.iishanten_daily_effort
 add column if not exists effort_token uuid not null default gen_random_uuid();
 

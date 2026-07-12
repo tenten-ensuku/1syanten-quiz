@@ -545,6 +545,10 @@ h2 {
   margin-top: 8px;
 }
 
+.rankGenreGrid.fiveGenres {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .rankingCategoryTabs button,
 .rankingPeriodTabs button,
 .rankGenreGrid button {
@@ -702,6 +706,34 @@ h2 {
   font-size: 1.5rem;
   font-weight: 1000;
   text-align: center;
+}
+
+.rankingRankRow {
+  grid-template-columns: 24px minmax(7rem, 1fr) auto auto;
+  min-height: 54px;
+  padding: 7px 9px;
+}
+
+.rankingRankStats {
+  display: grid;
+  gap: 2px;
+  min-width: 7.5rem;
+  text-align: right;
+}
+
+.rankingRankStats strong,
+.rankingRankStats span {
+  white-space: nowrap;
+}
+
+.rankingRankStats strong {
+  font-size: 0.75rem;
+}
+
+.rankingRankStats span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .rankingEmpty {
@@ -2181,6 +2213,25 @@ h2 {
     grid-template-columns: 20px minmax(4.8rem, 1fr) auto auto auto;
     gap: 4px;
     padding-inline: 7px;
+  }
+
+  .rankGenreGrid.fiveGenres {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rankingRankRow {
+    grid-template-columns: 20px minmax(5.2rem, 1fr) auto auto;
+    gap: 5px;
+    padding-inline: 7px;
+  }
+
+  .rankingRank {
+    min-width: 30px;
+    font-size: 1.15rem;
+  }
+
+  .rankingRankStats {
+    min-width: 6.6rem;
   }
 
   .rankingEffortName,

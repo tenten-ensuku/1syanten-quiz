@@ -7,8 +7,7 @@ export type RankGenre =
   | "both-random10"
   | "advanced-random10"
   | "basic-all"
-  | "both-all"
-  | "advanced-all";
+  | "both-all";
 
 export type RankingSubmission = {
   run_id: string;
@@ -49,6 +48,9 @@ export type RankRankingRow = {
   player_name: string;
   rank: string;
   score: number;
+  correct_count: number;
+  correct_rate: number;
+  elapsed_seconds: number;
   average_seconds: number;
   answer_count: number;
   difficulty_mode: RankingDifficulty;
@@ -59,6 +61,13 @@ export type RankRankingRow = {
 const SUPABASE_URL = "https://kclkzevcgpfbavegwbnf.supabase.co";
 const SUPABASE_KEY = "sb_publishable__8xy0NDda20OtQPc1zSEng_6440qlY2";
 const RANK_ORDER = ["F", "E", "D", "C", "B", "A", "S", "SS", "神"];
+const RANK_GENRE_ANSWER_COUNTS: Record<RankGenre, number> = {
+  "basic-random10": 10,
+  "both-random10": 10,
+  "advanced-random10": 10,
+  "basic-all": 63,
+  "both-all": 85
+};
 
 function getJstDateParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -190,11 +199,12 @@ export async function fetchRankRankings(
   ];
   const query = new URLSearchParams({
     select:
-      "device_id,player_name,rank,score,average_seconds,answer_count,difficulty_mode,challenge_mode,submitted_at",
+      "device_id,player_name,rank,score,correct_count,correct_rate,elapsed_seconds,average_seconds,answer_count,difficulty_mode,challenge_mode,submitted_at",
     limit: "200"
   });
   query.set("difficulty_mode", `eq.${difficultyMode}`);
   query.set("challenge_mode", `eq.${challengeMode}`);
+  query.set("answer_count", `eq.${RANK_GENRE_ANSWER_COUNTS[genre]}`);
   if (periodKey) {
     query.set("period_key", `eq.${periodKey}`);
   }
