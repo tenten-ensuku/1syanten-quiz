@@ -173,6 +173,31 @@ h2 {
   font-weight: 900;
 }
 
+.menuUpdateNotice {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 22px;
+  color: #e7edf6;
+  background: #182335;
+  border-top: 1px solid rgba(244, 215, 124, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.menuUpdateNotice strong {
+  flex: 0 0 auto;
+  color: var(--gold-2);
+  font-size: 0.78rem;
+  font-weight: 1000;
+}
+
+.menuUpdateNotice p {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
 .menuTabs {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -2118,6 +2143,16 @@ h2 {
 
   .menuTop {
     padding: 18px 16px 16px;
+  }
+
+  .menuUpdateNotice {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 16px;
+  }
+
+  .menuUpdateNotice p {
+    font-size: 0.72rem;
   }
 
   .settingsButton {

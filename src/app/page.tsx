@@ -2184,6 +2184,13 @@ export default function Home() {
         </div>
       </header>
 
+      <aside className="menuUpdateNotice" aria-label="更新情報">
+        <strong>更新情報</strong>
+        <p>
+          学習申告では正答数のみを送信する事にしました。各種ランク対決の方のランキングを復活しました。
+        </p>
+      </aside>
+
       <nav className="menuTabs" aria-label="メニュー">
         {MENU_TABS.map((tab) => (
           <button
