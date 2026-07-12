@@ -1560,6 +1560,9 @@ export default function Home() {
 
     const questionCount = session.order.length;
     const mistakeCount = Math.max(0, session.answeredCount - session.correctCount);
+    const activityDate = getJstDateKey();
+    const hasPendingLearningReport =
+      (pendingDailyEffort[activityDate]?.answerCount ?? 0) > 0;
     setRankingSubmitStatus("送信中...");
     try {
       await submitRankingResult({
@@ -1581,8 +1584,27 @@ export default function Home() {
         average_seconds: Number((session.totalMs / questionCount / 1000).toFixed(2)),
         client_version: APP_VERSION
       });
+
+      if (!hasPendingLearningReport) {
+        setSubmittedRunId(session.runId);
+        setRankingSubmitStatus(
+          `${getRankGenreLabel(genre)}の成績を送信しました。正答数は申告済みです。`
+        );
+        return;
+      }
+
+      const learningReported = await submitLearningReport(session.runId);
+      if (!learningReported) {
+        setRankingSubmitStatus(
+          "成績は送信しました。学習申告を再送するには、もう一度このボタンを押してください。"
+        );
+        return;
+      }
+
       setSubmittedRunId(session.runId);
-      setRankingSubmitStatus(`${getRankGenreLabel(genre)}の成績を送信しました。`);
+      setRankingSubmitStatus(
+        `${getRankGenreLabel(genre)}の成績と正答数を送信しました。`
+      );
     } catch (error) {
       setRankingSubmitStatus(
         error instanceof Error
