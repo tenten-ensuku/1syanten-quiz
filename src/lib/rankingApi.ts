@@ -30,11 +30,6 @@ export type PendingDailyEffort = {
   totalMs: number;
 };
 
-export type LearningReportOptions = {
-  includeAnswerCount: boolean;
-  includeTime: boolean;
-};
-
 export type EffortRankingRow = {
   device_id: string;
   player_name: string;
@@ -145,14 +140,12 @@ export async function submitDailyEffortEvent(
   deviceId: string,
   playerName: string,
   activityDate: string,
-  pending: PendingDailyEffort,
-  options: LearningReportOptions
+  pending: PendingDailyEffort
 ) {
   if (pending.answerCount === 0) {
     return;
   }
 
-  const answerCount = options.includeAnswerCount ? pending.answerCount : null;
   await supabaseRequest("iishanten_effort_events", {
     method: "POST",
     headers: {
@@ -164,11 +157,8 @@ export async function submitDailyEffortEvent(
       activity_date: activityDate,
       player_name: playerName,
       correct_count: pending.correctCount,
-      answer_count: answerCount,
-      elapsed_seconds:
-        options.includeTime && answerCount !== null
-          ? Number((pending.totalMs / 1000).toFixed(2))
-          : null
+      answer_count: null,
+      elapsed_seconds: null
     })
   });
 }
