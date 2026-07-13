@@ -2040,9 +2040,17 @@ export default function Home() {
                       <strong>{row.player_name}</strong>
                       <span>{getRankGenreLabel(rankGenre)}</span>
                     </div>
-                    <strong className={`rankingRank ${rankClassName(row.rank as ResultRank)}`}>
-                      {row.rank}
-                    </strong>
+                    {row.rank === "神" ? (
+                      <img
+                        className="rankingGodRankImage"
+                        src={`${BASE_PATH}/god-rank.png`}
+                        alt="神"
+                      />
+                    ) : (
+                      <strong className={`rankingRank ${rankClassName(row.rank as ResultRank)}`}>
+                        {row.rank}
+                      </strong>
+                    )}
                     <div className="rankingRankStats">
                       <strong>正答率 {Number(row.correct_rate).toFixed(1)}%</strong>
                       <span>平均 {Number(row.average_seconds).toFixed(2)}秒</span>

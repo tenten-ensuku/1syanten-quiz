@@ -721,6 +721,13 @@ h2 {
   text-align: center;
 }
 
+.rankingGodRankImage {
+  display: block;
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+}
+
 .rankingRankRow {
   grid-template-columns: 24px minmax(7rem, 1fr) auto auto;
   min-height: 54px;
@@ -2222,6 +2229,11 @@ h2 {
   .rankingRank {
     min-width: 30px;
     font-size: 1.15rem;
+  }
+
+  .rankingGodRankImage {
+    width: 32px;
+    height: 32px;
   }
 
   .rankingRankStats {
