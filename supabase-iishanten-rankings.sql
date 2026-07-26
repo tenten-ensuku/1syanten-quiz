@@ -630,6 +630,179 @@ grant select on
   public.iishanten_effort_all
 to anon;
 
+-- Rolling leaderboard windows: include today and the preceding 6 or 29 JST calendar days.
+create or replace view public.iishanten_effort_weekly
+with (security_invoker = true) as
+with period as (
+  select
+    (now() at time zone 'Asia/Tokyo')::date as period_key,
+    ((now() at time zone 'Asia/Tokyo')::date - 6) as start_date
+)
+select
+  effort.device_id,
+  (array_agg(effort.player_name order by effort.sort_time desc))[1] as player_name,
+  period.period_key,
+  sum(effort.correct_count)::bigint as correct_count,
+  sum(effort.answer_count)::bigint as answer_count,
+  round(sum(effort.elapsed_seconds) / nullif(sum(effort.answer_count), 0), 2) as average_seconds
+from (
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    updated_at as sort_time
+  from public.iishanten_daily_effort
+  union all
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    submitted_at as sort_time
+  from public.iishanten_effort_events
+) effort
+cross join period
+where effort.activity_date between period.start_date and period.period_key
+group by effort.device_id, period.period_key;
+
+create or replace view public.iishanten_effort_monthly
+with (security_invoker = true) as
+with period as (
+  select
+    (now() at time zone 'Asia/Tokyo')::date as period_key,
+    ((now() at time zone 'Asia/Tokyo')::date - 29) as start_date
+)
+select
+  effort.device_id,
+  (array_agg(effort.player_name order by effort.sort_time desc))[1] as player_name,
+  period.period_key,
+  sum(effort.correct_count)::bigint as correct_count,
+  sum(effort.answer_count)::bigint as answer_count,
+  round(sum(effort.elapsed_seconds) / nullif(sum(effort.answer_count), 0), 2) as average_seconds
+from (
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    updated_at as sort_time
+  from public.iishanten_daily_effort
+  union all
+  select
+    device_id,
+    player_name,
+    activity_date,
+    correct_count,
+    answer_count,
+    elapsed_seconds,
+    submitted_at as sort_time
+  from public.iishanten_effort_events
+) effort
+cross join period
+where effort.activity_date between period.start_date and period.period_key
+group by effort.device_id, period.period_key;
+
+create or replace view public.iishanten_rank_weekly
+with (security_invoker = true) as
+with period as (
+  select
+    (now() at time zone 'Asia/Tokyo')::date as period_key,
+    ((now() at time zone 'Asia/Tokyo')::date - 6) as start_date
+)
+select * from (
+  select
+    submission.device_id,
+    submission.player_name,
+    period.period_key,
+    submission.rank,
+    submission.score,
+    submission.correct_count,
+    submission.correct_rate,
+    submission.elapsed_seconds,
+    submission.average_seconds,
+    submission.answer_count,
+    submission.difficulty_mode,
+    submission.challenge_mode,
+    submission.submitted_at,
+    row_number() over (
+      partition by
+        submission.device_id,
+        submission.difficulty_mode,
+        submission.challenge_mode,
+        submission.answer_count
+      order by
+        case submission.rank
+          when '神' then 9 when 'SS' then 8 when 'S' then 7
+          when 'A' then 6 when 'B' then 5 when 'C' then 4
+          when 'D' then 3 when 'E' then 2 else 1
+        end desc,
+        submission.correct_rate desc,
+        submission.average_seconds asc,
+        submission.score desc,
+        submission.submitted_at asc
+    ) as player_row
+  from public.iishanten_ranking_submissions submission
+  cross join period
+  where submission.challenge_mode in ('random10', 'all')
+    and (submission.submitted_at at time zone 'Asia/Tokyo')::date
+      between period.start_date and period.period_key
+) ranked
+where player_row = 1;
+
+create or replace view public.iishanten_rank_monthly
+with (security_invoker = true) as
+with period as (
+  select
+    (now() at time zone 'Asia/Tokyo')::date as period_key,
+    ((now() at time zone 'Asia/Tokyo')::date - 29) as start_date
+)
+select * from (
+  select
+    submission.device_id,
+    submission.player_name,
+    period.period_key,
+    submission.rank,
+    submission.score,
+    submission.correct_count,
+    submission.correct_rate,
+    submission.elapsed_seconds,
+    submission.average_seconds,
+    submission.answer_count,
+    submission.difficulty_mode,
+    submission.challenge_mode,
+    submission.submitted_at,
+    row_number() over (
+      partition by
+        submission.device_id,
+        submission.difficulty_mode,
+        submission.challenge_mode,
+        submission.answer_count
+      order by
+        case submission.rank
+          when '神' then 9 when 'SS' then 8 when 'S' then 7
+          when 'A' then 6 when 'B' then 5 when 'C' then 4
+          when 'D' then 3 when 'E' then 2 else 1
+        end desc,
+        submission.correct_rate desc,
+        submission.average_seconds asc,
+        submission.score desc,
+        submission.submitted_at asc
+    ) as player_row
+  from public.iishanten_ranking_submissions submission
+  cross join period
+  where submission.challenge_mode in ('random10', 'all')
+    and (submission.submitted_at at time zone 'Asia/Tokyo')::date
+      between period.start_date and period.period_key
+) ranked
+where player_row = 1;
+
 -- Rank records keep the rate explicitly and separate leaderboards by question count.
 alter table public.iishanten_ranking_submissions
 add column if not exists correct_rate numeric(5, 2)

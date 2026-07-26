@@ -91,15 +91,7 @@ function getPeriodKey(period: RankingPeriod) {
     return null;
   }
 
-  const parts = getJstDateParts();
-  const utcDate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-  if (period === "weekly") {
-    const mondayOffset = (utcDate.getUTCDay() + 6) % 7;
-    utcDate.setUTCDate(utcDate.getUTCDate() - mondayOffset);
-  } else if (period === "monthly") {
-    utcDate.setUTCDate(1);
-  }
-  return utcDate.toISOString().slice(0, 10);
+  return getJstDateKey();
 }
 
 async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<T> {
