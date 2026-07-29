@@ -1626,8 +1626,9 @@ h2 {
 .explanationBlock p,
 .explanationText {
   margin-bottom: 0;
-  font-size: 1.125rem;
-  line-height: 1.9;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.85;
 }
 
 .inlineTileGroup {
