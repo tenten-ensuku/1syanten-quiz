@@ -1,0 +1,15 @@
+{
+  "name": "一向聴の受け入れテスト",
+  "short_name": "一向聴受け入れ",
+  "icons": [
+    {
+      "src": "./shortcut-icon.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "display": "standalone",
+  "background_color": "#07172a",
+  "theme_color": "#07172a"
+}
