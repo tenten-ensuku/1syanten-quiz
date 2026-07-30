@@ -116,6 +116,20 @@ const SETTINGS_STORAGE_KEY = "iishanten-quiz-settings-v1";
 const DEVICE_ID_STORAGE_KEY = "iishanten-quiz-device-id-v1";
 const PENDING_DAILY_EFFORT_STORAGE_KEY = "iishanten-quiz-pending-daily-effort-v1";
 const DAILY_ACTIVITY_STORAGE_KEY = "iishanten-quiz-daily-activity-v1";
+const LOCAL_SHORTCUT_ICON_STORAGE_KEY = "iishanten-quiz-local-shortcut-icon-v1";
+const LOCAL_SHORTCUT_ICON_ATTRIBUTE = "data-local-shortcut-icon";
+const LOCAL_SHORTCUT_ICON_ORIGINAL_HREF_ATTRIBUTE =
+  "data-local-shortcut-icon-original-href";
+const LOCAL_SHORTCUT_ICON_HAD_HREF_ATTRIBUTE =
+  "data-local-shortcut-icon-had-href";
+const MAX_LOCAL_SHORTCUT_ICON_BYTES = 1024 * 1024;
+const SHORTCUT_ICON_RELS = ["icon", "shortcut icon", "apple-touch-icon"] as const;
+const SUPPORTED_SHORTCUT_ICON_FILE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif"
+]);
 const BACKUP_STORAGE_KEYS = [
   STATS_STORAGE_KEY,
   FAVORITES_STORAGE_KEY,
@@ -322,6 +336,112 @@ function loadSettings(): AppSettings {
   } catch {
     return DEFAULT_SETTINGS;
   }
+}
+
+function isValidLocalShortcutIconUrl(value: string) {
+  const iconUrl = value.trim();
+
+  if (/^data:image\//i.test(iconUrl)) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(iconUrl);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function loadLocalShortcutIconUrl() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    const iconUrl = window.localStorage.getItem(LOCAL_SHORTCUT_ICON_STORAGE_KEY) ?? "";
+    return isValidLocalShortcutIconUrl(iconUrl) ? iconUrl.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+function getShortcutIconFileType(file: File) {
+  const type = file.type.toLowerCase();
+  if (SUPPORTED_SHORTCUT_ICON_FILE_TYPES.has(type)) {
+    return type;
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  return (
+    {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      webp: "image/webp",
+      gif: "image/gif"
+    }[extension ?? ""] ?? ""
+  );
+}
+
+function updateShortcutIconLinks(iconUrl: string) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const links = Array.from(document.head.querySelectorAll<HTMLLinkElement>("link"));
+
+  SHORTCUT_ICON_RELS.forEach((rel) => {
+    const matchingLinks = links.filter((link) => link.rel.toLowerCase().trim() === rel);
+
+    if (matchingLinks.length === 0) {
+      const dynamicLink = document.createElement("link");
+      dynamicLink.rel = rel;
+      dynamicLink.href = iconUrl;
+      dynamicLink.setAttribute(LOCAL_SHORTCUT_ICON_ATTRIBUTE, "true");
+      document.head.append(dynamicLink);
+      return;
+    }
+
+    matchingLinks.forEach((link) => {
+      if (!link.hasAttribute(LOCAL_SHORTCUT_ICON_ORIGINAL_HREF_ATTRIBUTE)) {
+        const originalHref = link.getAttribute("href");
+        link.setAttribute(LOCAL_SHORTCUT_ICON_ORIGINAL_HREF_ATTRIBUTE, originalHref ?? "");
+        link.setAttribute(
+          LOCAL_SHORTCUT_ICON_HAD_HREF_ATTRIBUTE,
+          originalHref === null ? "false" : "true"
+        );
+      }
+      link.setAttribute("href", iconUrl);
+    });
+  });
+}
+
+function restoreShortcutIconLinks() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.head
+    .querySelectorAll<HTMLLinkElement>(`link[${LOCAL_SHORTCUT_ICON_ATTRIBUTE}="true"]`)
+    .forEach((link) => link.remove());
+
+  document.head
+    .querySelectorAll<HTMLLinkElement>(`link[${LOCAL_SHORTCUT_ICON_ORIGINAL_HREF_ATTRIBUTE}]`)
+    .forEach((link) => {
+      const hadOriginalHref =
+        link.getAttribute(LOCAL_SHORTCUT_ICON_HAD_HREF_ATTRIBUTE) === "true";
+      const originalHref = link.getAttribute(LOCAL_SHORTCUT_ICON_ORIGINAL_HREF_ATTRIBUTE);
+
+      if (hadOriginalHref && originalHref !== null) {
+        link.setAttribute("href", originalHref);
+      } else {
+        link.removeAttribute("href");
+      }
+
+      link.removeAttribute(LOCAL_SHORTCUT_ICON_ORIGINAL_HREF_ATTRIBUTE);
+      link.removeAttribute(LOCAL_SHORTCUT_ICON_HAD_HREF_ATTRIBUTE);
+    });
 }
 
 function loadPendingDailyEffort(): PendingDailyEffortByDate {
@@ -722,6 +842,13 @@ export default function Home() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [backupStatus, setBackupStatus] = useState("");
+  const [localShortcutIconUrl, setLocalShortcutIconUrl] = useState("");
+  const [shortcutIconUrlInput, setShortcutIconUrlInput] = useState("");
+  const [shortcutIconStatus, setShortcutIconStatus] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [isShortcutIconDragActive, setIsShortcutIconDragActive] = useState(false);
   const [pendingDailyEffort, setPendingDailyEffort] =
     useState<PendingDailyEffortByDate>({});
   const [hasLoadedPendingDailyEffort, setHasLoadedPendingDailyEffort] =
@@ -746,6 +873,7 @@ export default function Home() {
   const isPointerSelectingRef = useRef(false);
   const pointerSelectedTilesRef = useRef(new Set<TileId>());
   const restoreFileInputRef = useRef<HTMLInputElement>(null);
+  const shortcutIconFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setStats(loadStats());
@@ -764,6 +892,13 @@ export default function Home() {
     setHasLoadedPendingDailyEffort(true);
     setDailyActivity(loadDailyActivity());
     setHasLoadedDailyActivity(true);
+
+    const savedShortcutIconUrl = loadLocalShortcutIconUrl();
+    if (savedShortcutIconUrl) {
+      setLocalShortcutIconUrl(savedShortcutIconUrl);
+      setShortcutIconUrlInput(savedShortcutIconUrl);
+      updateShortcutIconLinks(savedShortcutIconUrl);
+    }
   }, []);
 
   useEffect(() => {
@@ -1258,6 +1393,107 @@ export default function Home() {
     if (tileId) {
       event.preventDefault();
       pushTileDuringPointerSelect(tileId);
+    }
+  };
+
+  const saveLocalShortcutIcon = (iconUrl: string) => {
+    const trimmedIconUrl = iconUrl.trim();
+
+    if (!isValidLocalShortcutIconUrl(trimmedIconUrl)) {
+      setShortcutIconStatus({
+        type: "error",
+        text: "画像URLは http://、https://、または data:image/ から始まるものを入力してください。"
+      });
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(LOCAL_SHORTCUT_ICON_STORAGE_KEY, trimmedIconUrl);
+      updateShortcutIconLinks(trimmedIconUrl);
+      setLocalShortcutIconUrl(trimmedIconUrl);
+      setShortcutIconUrlInput(trimmedIconUrl);
+      setShortcutIconStatus({
+        type: "success",
+        text:
+          "保存完了！ この端末のショートカットアイコンを保存しました。iPhoneの既存ショートカットは削除して再追加してください。"
+      });
+    } catch {
+      setShortcutIconStatus({
+        type: "error",
+        text: "アイコンを端末内に保存できませんでした。ブラウザーの保存容量や設定を確認してください。"
+      });
+    }
+  };
+
+  const handleShortcutIconFile = (file: File | undefined) => {
+    if (!file) {
+      setShortcutIconStatus({
+        type: "error",
+        text: "画像ファイルを選択してください。"
+      });
+      return;
+    }
+
+    if (!SUPPORTED_SHORTCUT_ICON_FILE_TYPES.has(getShortcutIconFileType(file))) {
+      setShortcutIconStatus({
+        type: "error",
+        text: "対応していない画像形式です。JPEG、PNG、WebP、GIFの画像を選んでください。"
+      });
+      return;
+    }
+
+    if (file.size > MAX_LOCAL_SHORTCUT_ICON_BYTES) {
+      setShortcutIconStatus({
+        type: "error",
+        text: `画像サイズが大きすぎます（${(file.size / 1024 / 1024).toFixed(2)}MB）。端末内に保存するため、1MB以下の画像を選んでください。`
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string" || !isValidLocalShortcutIconUrl(reader.result)) {
+        setShortcutIconStatus({
+          type: "error",
+          text: "画像データを読み込めませんでした。別の画像を選んでください。"
+        });
+        return;
+      }
+      saveLocalShortcutIcon(reader.result);
+    };
+    reader.onerror = () => {
+      setShortcutIconStatus({
+        type: "error",
+        text: "画像データを読み込めませんでした。別の画像を選んでください。"
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleShortcutIconFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    handleShortcutIconFile(event.target.files?.[0]);
+    event.target.value = "";
+  };
+
+  const clearLocalShortcutIcon = () => {
+    if (!window.confirm("この端末のショートカットアイコン設定を解除しますか？")) {
+      return;
+    }
+
+    try {
+      window.localStorage.removeItem(LOCAL_SHORTCUT_ICON_STORAGE_KEY);
+      restoreShortcutIconLinks();
+      setLocalShortcutIconUrl("");
+      setShortcutIconUrlInput("");
+      setShortcutIconStatus({
+        type: "success",
+        text: "アイコン設定を解除しました。既存ショートカットは削除して再追加してください。"
+      });
+    } catch {
+      setShortcutIconStatus({
+        type: "error",
+        text: "アイコン設定を解除できませんでした。ブラウザーの設定を確認してください。"
+      });
     }
   };
 
@@ -1914,6 +2150,100 @@ export default function Home() {
             </button>
           </div>
 
+          <div className="settingsGroup shortcutIconGroup">
+            <span className="settingsLabel">ショートカットアイコン</span>
+            <div className="shortcutIconPreview" aria-label="現在のショートカットアイコン">
+              {localShortcutIconUrl ? (
+                <img src={localShortcutIconUrl} alt="設定中のショートカットアイコン" />
+              ) : (
+                <span>アイコン未設定</span>
+              )}
+            </div>
+            <p className="settingsHelp">
+              この設定は現在の端末・ブラウザーだけに保存され、他の端末や利用者には共有されません。選んだ画像の公開URLも作成されません。未設定時はブラウザーやOS側の表示に任せます。既存のiPhone・Braveなどのショートカットは自動更新されないため、保存後または解除後は削除してホーム画面へ追加し直してください。
+            </p>
+            <label className="settingsLabel" htmlFor="shortcut-icon-url">
+              アイコン画像URL
+            </label>
+            <input
+              className="settingsTextInput"
+              id="shortcut-icon-url"
+              inputMode="url"
+              placeholder="https://example.com/icon.png"
+              type="url"
+              value={shortcutIconUrlInput}
+              onChange={(event) => setShortcutIconUrlInput(event.target.value)}
+            />
+            <input
+              ref={shortcutIconFileInputRef}
+              id="shortcut-icon-file"
+              className="visuallyHidden"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+              onChange={handleShortcutIconFileChange}
+            />
+            <label
+              className={
+                isShortcutIconDragActive
+                  ? "shortcutIconDropZone dragActive"
+                  : "shortcutIconDropZone"
+              }
+              htmlFor="shortcut-icon-file"
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setIsShortcutIconDragActive(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setIsShortcutIconDragActive(true);
+              }}
+              onDragLeave={() => setIsShortcutIconDragActive(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setIsShortcutIconDragActive(false);
+                handleShortcutIconFile(event.dataTransfer.files[0]);
+              }}
+            >
+              画像を選ぶ／ここにドロップ
+              <span>JPEG・PNG・WebP・GIF、1MB以下</span>
+            </label>
+            <div className="shortcutIconActions">
+              <button
+                className="backupButton primary"
+                type="button"
+                onClick={() => {
+                  playTone("tap");
+                  saveLocalShortcutIcon(shortcutIconUrlInput);
+                }}
+              >
+                保存
+              </button>
+              <button
+                className="backupButton"
+                type="button"
+                onClick={() => {
+                  playTone("tap");
+                  clearLocalShortcutIcon();
+                }}
+              >
+                アイコン設定を解除
+              </button>
+            </div>
+            {shortcutIconStatus ? (
+              <p
+                className={
+                  shortcutIconStatus.type === "error"
+                    ? "shortcutIconStatus error"
+                    : "shortcutIconStatus success"
+                }
+                role={shortcutIconStatus.type === "error" ? "alert" : "status"}
+                aria-live="polite"
+              >
+                {shortcutIconStatus.text}
+              </p>
+            ) : null}
+          </div>
+
           <div className="settingsGroup backupGroup">
             <span className="settingsLabel">データ引継ぎ</span>
             <p className="settingsHelp">
@@ -2195,7 +2525,7 @@ export default function Home() {
       <aside className="menuUpdateNotice" aria-label="更新情報">
         <strong>更新情報</strong>
         <p>
-          学習申告では正答数のみを送信する事にしました。各種ランク対決の方のランキングを復活しました。
+          この端末だけで使えるショートカットアイコン設定を追加しました。
         </p>
       </aside>
 

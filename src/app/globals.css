@@ -905,6 +905,85 @@ h2 {
   font-weight: 900;
 }
 
+.shortcutIconGroup {
+  background: rgba(234, 242, 253, 0.86);
+}
+
+.shortcutIconPreview {
+  display: grid;
+  min-height: 92px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dashed rgba(18, 104, 200, 0.38);
+  border-radius: 8px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.shortcutIconPreview img {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.shortcutIconDropZone {
+  display: grid;
+  min-height: 86px;
+  place-items: center;
+  gap: 3px;
+  padding: 14px;
+  border: 2px dashed rgba(18, 104, 200, 0.42);
+  border-radius: 8px;
+  color: #0d518f;
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 0.92rem;
+  font-weight: 900;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.shortcutIconDropZone span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.shortcutIconDropZone:hover,
+.shortcutIconDropZone:focus-within,
+.shortcutIconDropZone.dragActive {
+  border-color: #1268c8;
+  background: #e4f1ff;
+  box-shadow: 0 0 0 3px rgba(18, 104, 200, 0.12);
+}
+
+.shortcutIconActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.shortcutIconStatus {
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1.55;
+}
+
+.shortcutIconStatus.success {
+  color: #155b36;
+  background: #e5f5eb;
+}
+
+.shortcutIconStatus.error {
+  color: #a71d24;
+  background: #fff0f0;
+}
+
 .visuallyHidden {
   position: absolute;
   width: 1px;
@@ -2168,6 +2247,10 @@ h2 {
     min-width: 62px;
     min-height: 52px;
     padding-inline: 8px;
+  }
+
+  .shortcutIconActions {
+    grid-template-columns: 1fr;
   }
 
   .menuTabs {
