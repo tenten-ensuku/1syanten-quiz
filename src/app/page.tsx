@@ -193,6 +193,17 @@ const MENU_TABS: { id: MenuTab; label: string }[] = [
   { id: "ranking", label: "順位" }
 ];
 
+const ANNOUNCEMENTS = [
+  {
+    date: "2026年7月30日",
+    content: "アナウンスボタンを追加し、修正日時と内容を確認できるようにしました。"
+  },
+  {
+    date: "2026年7月30日",
+    content: "この端末だけで使えるショートカットアイコン設定を追加しました。"
+  }
+] as const;
+
 const TYPE_FILTER_OPTIONS: TypeFilterOption[] = [
   {
     id: "two-meld",
@@ -823,6 +834,7 @@ function ExplanationText({ explanation }: { explanation: string }) {
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>("menu");
   const [menuTab, setMenuTab] = useState<MenuTab>("challenge");
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
   const [reviewMode, setReviewMode] = useState<ReviewMode>("mistakes");
   const [session, setSession] = useState<PlaySession | null>(null);
   const [question, setQuestion] = useState(() => createRandomVariant(QUIZ_QUESTIONS[0]));
@@ -2506,28 +2518,50 @@ export default function Home() {
         </div>
         <div className="menuTopActions">
           <span className="versionBadge">{APP_VERSION}</span>
-          <button
-            className={menuTab === "settings" ? "settingsButton active" : "settingsButton"}
-            type="button"
-            aria-pressed={menuTab === "settings"}
-            onClick={() => {
-              playTone("tap");
-              setBackupStatus("");
-              setMenuTab(menuTab === "settings" ? "challenge" : "settings");
-            }}
-          >
-            <span className="settingsIcon" aria-hidden="true">⚙</span>
-            <span>設定</span>
-          </button>
+          <div className="menuActionButtons">
+            <button
+              className={isAnnouncementOpen ? "settingsButton active" : "settingsButton"}
+              type="button"
+              aria-expanded={isAnnouncementOpen}
+              aria-controls="announcement-panel"
+              onClick={() => {
+                playTone("tap");
+                setIsAnnouncementOpen((current) => !current);
+              }}
+            >
+              <span className="settingsIcon" aria-hidden="true">📣</span>
+              <span>お知らせ</span>
+            </button>
+            <button
+              className={menuTab === "settings" ? "settingsButton active" : "settingsButton"}
+              type="button"
+              aria-pressed={menuTab === "settings"}
+              onClick={() => {
+                playTone("tap");
+                setBackupStatus("");
+                setMenuTab(menuTab === "settings" ? "challenge" : "settings");
+              }}
+            >
+              <span className="settingsIcon" aria-hidden="true">⚙</span>
+              <span>設定</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      <aside className="menuUpdateNotice" aria-label="更新情報">
-        <strong>更新情報</strong>
-        <p>
-          この端末だけで使えるショートカットアイコン設定を追加しました。
-        </p>
-      </aside>
+      {isAnnouncementOpen ? (
+        <aside className="announcementPanel" id="announcement-panel" aria-label="お知らせ">
+          <strong>お知らせ</strong>
+          <div className="announcementList">
+            {ANNOUNCEMENTS.map((announcement) => (
+              <article className="announcementItem" key={`${announcement.date}-${announcement.content}`}>
+                <time dateTime="2026-07-30">{announcement.date}</time>
+                <p>{announcement.content}</p>
+              </article>
+            ))}
+          </div>
+        </aside>
+      ) : null}
 
       <nav className="menuTabs" aria-label="メニュー">
         {MENU_TABS.map((tab) => (

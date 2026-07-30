@@ -139,6 +139,11 @@ h2 {
   gap: 8px;
 }
 
+.menuActionButtons {
+  display: flex;
+  gap: 8px;
+}
+
 .settingsButton {
   display: grid;
   min-width: 72px;
@@ -173,27 +178,43 @@ h2 {
   font-weight: 900;
 }
 
-.menuUpdateNotice {
-  display: flex;
-  align-items: baseline;
+.announcementPanel {
+  display: grid;
   gap: 10px;
-  padding: 9px 22px;
+  padding: 14px 22px;
   color: #e7edf6;
   background: #182335;
   border-top: 1px solid rgba(244, 215, 124, 0.2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.menuUpdateNotice strong {
-  flex: 0 0 auto;
+.announcementPanel > strong {
   color: var(--gold-2);
-  font-size: 0.78rem;
+  font-size: 0.86rem;
   font-weight: 1000;
 }
 
-.menuUpdateNotice p {
-  margin: 0;
+.announcementList {
+  display: grid;
+  gap: 8px;
+}
+
+.announcementItem {
+  display: grid;
+  grid-template-columns: 7.4rem minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.announcementItem time {
+  color: #f4d77c;
   font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.announcementItem p {
+  margin: 0;
+  font-size: 0.82rem;
   font-weight: 800;
   line-height: 1.55;
 }
@@ -2233,20 +2254,19 @@ h2 {
     padding: 18px 16px 16px;
   }
 
-  .menuUpdateNotice {
-    align-items: flex-start;
-    gap: 8px;
-    padding: 8px 16px;
-  }
-
-  .menuUpdateNotice p {
-    font-size: 0.72rem;
-  }
-
   .settingsButton {
     min-width: 62px;
     min-height: 52px;
     padding-inline: 8px;
+  }
+
+  .announcementPanel {
+    padding: 12px 16px;
+  }
+
+  .announcementItem {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 
   .shortcutIconActions {
