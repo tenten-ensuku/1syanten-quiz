@@ -13,6 +13,7 @@ import {
 import { MeldView } from "@/components/MeldView";
 import { TileButton } from "@/components/TileButton";
 import { TileView } from "@/components/TileView";
+import { APP_BASE_PATH, storageKey } from "@/lib/appIdentity";
 import { APP_VERSION } from "@/lib/appVersion";
 import { playTone, setAudioVolume } from "@/lib/audioTones";
 import { HONOR_TILE_IDS, QUIZ_QUESTIONS, ShantenType, TileId } from "@/lib/quizData";
@@ -108,15 +109,15 @@ const RANK_GENRE_OPTIONS: { id: RankGenre; label: string }[] = [
   { id: "both-all", label: "全問85問" }
 ];
 
-const STATS_STORAGE_KEY = "iishanten-quiz-stats-v1";
-const FAVORITES_STORAGE_KEY = "iishanten-quiz-favorites-v1";
-const MISTAKE_CLEAR_MARKERS_STORAGE_KEY = "iishanten-quiz-mistake-clear-markers-v1";
-const CHALLENGE_RECORDS_STORAGE_KEY = "iishanten-quiz-challenge-records-v1";
-const SETTINGS_STORAGE_KEY = "iishanten-quiz-settings-v1";
-const DEVICE_ID_STORAGE_KEY = "iishanten-quiz-device-id-v1";
-const PENDING_DAILY_EFFORT_STORAGE_KEY = "iishanten-quiz-pending-daily-effort-v1";
-const DAILY_ACTIVITY_STORAGE_KEY = "iishanten-quiz-daily-activity-v1";
-const LOCAL_SHORTCUT_ICON_STORAGE_KEY = "iishanten-quiz-local-shortcut-icon-v1";
+const STATS_STORAGE_KEY = storageKey("stats-v1");
+const FAVORITES_STORAGE_KEY = storageKey("favorites-v1");
+const MISTAKE_CLEAR_MARKERS_STORAGE_KEY = storageKey("mistake-clear-markers-v1");
+const CHALLENGE_RECORDS_STORAGE_KEY = storageKey("challenge-records-v1");
+const SETTINGS_STORAGE_KEY = storageKey("settings-v1");
+const DEVICE_ID_STORAGE_KEY = storageKey("device-id-v1");
+const PENDING_DAILY_EFFORT_STORAGE_KEY = storageKey("pending-daily-effort-v1");
+const DAILY_ACTIVITY_STORAGE_KEY = storageKey("daily-activity-v1");
+const LOCAL_SHORTCUT_ICON_STORAGE_KEY = storageKey("customIcon");
 const LOCAL_SHORTCUT_ICON_ATTRIBUTE = "data-local-shortcut-icon";
 const LOCAL_SHORTCUT_ICON_ORIGINAL_HREF_ATTRIBUTE =
   "data-local-shortcut-icon-original-href";
@@ -140,12 +141,31 @@ const BACKUP_STORAGE_KEYS = [
   PENDING_DAILY_EFFORT_STORAGE_KEY,
   DAILY_ACTIVITY_STORAGE_KEY
 ] as const;
+const LEGACY_STORAGE_KEYS: Record<string, string> = {
+  [STATS_STORAGE_KEY]: "iishanten-quiz-stats-v1",
+  [FAVORITES_STORAGE_KEY]: "iishanten-quiz-favorites-v1",
+  [MISTAKE_CLEAR_MARKERS_STORAGE_KEY]: "iishanten-quiz-mistake-clear-markers-v1",
+  [CHALLENGE_RECORDS_STORAGE_KEY]: "iishanten-quiz-challenge-records-v1",
+  [SETTINGS_STORAGE_KEY]: "iishanten-quiz-settings-v1",
+  [DEVICE_ID_STORAGE_KEY]: "iishanten-quiz-device-id-v1",
+  [PENDING_DAILY_EFFORT_STORAGE_KEY]: "iishanten-quiz-pending-daily-effort-v1",
+  [DAILY_ACTIVITY_STORAGE_KEY]: "iishanten-quiz-daily-activity-v1"
+};
 const DEFAULT_SETTINGS: AppSettings = {
   nickname: "",
   volume: 3,
   slideTouchEnabled: true
 };
-const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH ?? APP_BASE_PATH).replace(/\/$/, "");
+
+function migrateLegacyStorage() {
+  if (typeof window === "undefined") return;
+  Object.entries(LEGACY_STORAGE_KEYS).forEach(([nextKey, legacyKey]) => {
+    if (window.localStorage.getItem(nextKey) !== null) return;
+    const legacyValue = window.localStorage.getItem(legacyKey);
+    if (legacyValue !== null) window.localStorage.setItem(nextKey, legacyValue);
+  });
+}
 
 type ExplanationAsset = {
   src: string;
@@ -888,6 +908,7 @@ export default function Home() {
   const shortcutIconFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    migrateLegacyStorage();
     setStats(loadStats());
     setHasLoadedStats(true);
     setFavoriteQuestionIds(loadFavorites());

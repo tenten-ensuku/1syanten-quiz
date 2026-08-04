@@ -1,15 +1,32 @@
 {
+  "id": "/1syanten-quiz/",
   "name": "一向聴の受け入れテスト",
   "short_name": "一向聴受け入れ",
+  "description": "13枚の牌姿からテンパイに進む受け入れ牌をすべて選ぶ麻雀テスト",
+  "start_url": "/1syanten-quiz/",
+  "scope": "/1syanten-quiz/",
+  "display": "standalone",
+  "background_color": "#07131c",
+  "theme_color": "#132b3a",
+  "lang": "ja",
   "icons": [
     {
-      "src": "./shortcut-icon.png",
-      "sizes": "1254x1254",
+      "src": "/1syanten-quiz/icons/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/1syanten-quiz/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/1syanten-quiz/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ],
-  "display": "standalone",
-  "background_color": "#07172a",
-  "theme_color": "#07172a"
+  ]
 }
