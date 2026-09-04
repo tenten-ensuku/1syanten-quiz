@@ -26,10 +26,13 @@ import {
   type RankingChallengeMode,
   type RankingDifficulty,
   type RankingPeriod,
+  SUPABASE_SERVICE_STATUS,
   type PendingDailyEffort,
   fetchEffortRankings,
   fetchRankRankings,
   getJstDateKey,
+  getSupabaseServiceNotice,
+  getSupabaseUserMessage,
   submitDailyEffortEvent,
   submitRankingResult
 } from "@/lib/rankingApi";
@@ -1003,6 +1006,14 @@ export default function Home() {
       return;
     }
 
+    if (SUPABASE_SERVICE_STATUS.enabled) {
+      setEffortRankingRows([]);
+      setRankRankingRows([]);
+      setRankingLoading(false);
+      setRankingError(getSupabaseServiceNotice("view"));
+      return;
+    }
+
     let active = true;
     setRankingLoading(true);
     setRankingError("");
@@ -1025,9 +1036,7 @@ export default function Home() {
       })
       .catch((error) => {
         if (active) {
-          setRankingError(
-            error instanceof Error ? error.message : "ランキングを取得できませんでした。"
-          );
+          setRankingError(getSupabaseUserMessage(error, "view"));
         }
       })
       .finally(() => {
@@ -1764,6 +1773,11 @@ export default function Home() {
   };
 
   const submitLearningReport = async (eventId: string) => {
+    if (SUPABASE_SERVICE_STATUS.enabled) {
+      setRankingSubmitStatus(getSupabaseServiceNotice("submit"));
+      return false;
+    }
+
     const nickname = settings.nickname.trim();
     if (!nickname) {
       setRankingSubmitStatus("設定でニックネームを入力してください。");
@@ -1801,16 +1815,17 @@ export default function Home() {
       setRankingSubmitStatus("正答数を申告しました。");
       return true;
     } catch (error) {
-      setRankingSubmitStatus(
-        error instanceof Error
-          ? `送信に失敗しました。${error.message}`
-          : "送信に失敗しました。"
-      );
+      setRankingSubmitStatus(getSupabaseUserMessage(error, "submit"));
       return false;
     }
   };
 
   const submitCompletedResult = async () => {
+    if (SUPABASE_SERVICE_STATUS.enabled) {
+      setRankingSubmitStatus(getSupabaseServiceNotice("submit"));
+      return;
+    }
+
     if (!session || session.mode !== "timeAttack" || submittedRunId === session.runId) {
       return;
     }
@@ -1875,11 +1890,7 @@ export default function Home() {
         `${getRankGenreLabel(genre)}の成績と正答数を送信しました。`
       );
     } catch (error) {
-      setRankingSubmitStatus(
-        error instanceof Error
-          ? `送信に失敗しました。${error.message}`
-          : "送信に失敗しました。"
-      );
+      setRankingSubmitStatus(getSupabaseUserMessage(error, "submit"));
     }
   };
 
@@ -2325,6 +2336,7 @@ export default function Home() {
                 className={rankingCategory === category ? "active" : ""}
                 key={category}
                 type="button"
+                disabled={SUPABASE_SERVICE_STATUS.enabled}
                 onClick={() => setRankingCategory(category)}
               >
                 {label}
@@ -2345,6 +2357,7 @@ export default function Home() {
                 className={rankingPeriod === period ? "active" : ""}
                 key={period}
                 type="button"
+                disabled={SUPABASE_SERVICE_STATUS.enabled}
                 onClick={() => setRankingPeriod(period)}
               >
                 {label}
@@ -2359,6 +2372,7 @@ export default function Home() {
                   className={rankGenre === option.id ? "active" : ""}
                   key={option.id}
                   type="button"
+                  disabled={SUPABASE_SERVICE_STATUS.enabled}
                   onClick={() => setRankGenre(option.id)}
                 >
                   {option.label}
@@ -2376,7 +2390,7 @@ export default function Home() {
           {rankingLoading ? (
             <p className="rankingEmpty">読み込み中...</p>
           ) : rankingError ? (
-            <p className="rankingEmpty error">ランキングを取得できませんでした。</p>
+            <p className="rankingEmpty error" role="status" aria-live="polite">{rankingError}</p>
           ) : (
             rankingCategory === "effort" && effortRankingRows.length > 0 ? (
               <div className="rankingList">
@@ -2513,6 +2527,7 @@ export default function Home() {
             type="button"
             onClick={submitMenuLearningReport}
             disabled={
+              SUPABASE_SERVICE_STATUS.enabled ||
               !settings.nickname.trim() ||
               todayPendingEffort.answerCount === 0 ||
               rankingSubmitStatus === "送信中..."
@@ -2520,7 +2535,11 @@ export default function Home() {
           >
             学習申告
           </button>
-          {rankingSubmitStatus ? (
+          {SUPABASE_SERVICE_STATUS.enabled ? (
+            <p className="rankingSubmitStatus" role="status" aria-live="polite">
+              {getSupabaseServiceNotice("submit")}
+            </p>
+          ) : rankingSubmitStatus ? (
             <p className="rankingSubmitStatus" role="status">
               {rankingSubmitStatus}
             </p>
@@ -2569,6 +2588,13 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {SUPABASE_SERVICE_STATUS.enabled ? (
+        <aside className="announcementPanel" role="status" aria-live="polite">
+          <strong>{SUPABASE_SERVICE_STATUS.bannerTitle}</strong>
+          <p>{SUPABASE_SERVICE_STATUS.bannerBody} {SUPABASE_SERVICE_STATUS.recoveryNotice} ご不便をおかけして申し訳ございません。</p>
+        </aside>
+      ) : null}
 
       {isAnnouncementOpen ? (
         <aside className="announcementPanel" id="announcement-panel" aria-label="お知らせ">
@@ -2680,14 +2706,23 @@ export default function Home() {
             type="button"
             onClick={submitCompletedResult}
             disabled={
+              SUPABASE_SERVICE_STATUS.enabled ||
               !settings.nickname.trim() ||
               rankingSubmitStatus === "送信中..." ||
               submittedRunId === session?.runId
             }
           >
-            {submittedRunId === session?.runId ? "送信済み" : "成績を送信"}
+            {SUPABASE_SERVICE_STATUS.enabled
+              ? "成績送信は一時停止中"
+              : submittedRunId === session?.runId
+                ? "送信済み"
+                : "成績を送信"}
           </button>
-          {rankingSubmitStatus ? (
+          {SUPABASE_SERVICE_STATUS.enabled ? (
+            <p className="rankingSubmitStatus" role="status" aria-live="polite">
+              {getSupabaseServiceNotice("submit")}
+            </p>
+          ) : rankingSubmitStatus ? (
             <p className="rankingSubmitStatus" role="status">
               {rankingSubmitStatus}
             </p>

@@ -53,6 +53,62 @@ export type RankRankingRow = {
   submitted_at: string;
 };
 
+export type RankingOperation = "submit" | "view";
+
+export const SUPABASE_SERVICE_STATUS = {
+  enabled: true,
+  bannerTitle: "一部機能を一時停止しています",
+  bannerBody:
+    "現在システム調整のため、成績送信・ランキング閲覧など一部のオンライン機能をご利用いただけません。問題演習・採点・ローカル履歴は引き続きご利用いただけます。",
+  recoveryNotice: "2026年9月6日以降、順次復旧予定です。",
+  submitNotice:
+    "現在、成績送信機能は一時停止中です。2026年9月6日以降、順次復旧予定です。ご不便をおかけして申し訳ございません。",
+  viewNotice:
+    "現在、成績・ランキングの閲覧機能は一時停止中です。2026年9月6日以降、順次復旧予定です。ご不便をおかけして申し訳ございません。"
+} as const;
+
+export function getSupabaseServiceNotice(operation: RankingOperation) {
+  return operation === "view"
+    ? SUPABASE_SERVICE_STATUS.viewNotice
+    : SUPABASE_SERVICE_STATUS.submitNotice;
+}
+
+type SupabaseRequestError = Error & {
+  code?: string;
+  details?: string;
+  status?: number;
+  statusCode?: number;
+  operation?: RankingOperation;
+};
+
+function createSupabasePausedError(operation: RankingOperation): SupabaseRequestError {
+  const error = new Error("Supabase request paused") as SupabaseRequestError;
+  error.code = "ONLINE_SERVICE_PAUSED";
+  error.operation = operation;
+  return error;
+}
+
+function isSupabaseServiceUnavailable(error: unknown) {
+  const candidate = error as SupabaseRequestError | null;
+  const status = Number(candidate?.status || candidate?.statusCode || candidate?.code);
+  const message = String(
+    `${candidate?.message || ""} ${candidate?.details || ""} ${error || ""}`
+  ).toLowerCase();
+  return [402, 429].includes(status)
+    || (status >= 500 && status <= 599)
+    || /quota exceeded|service restricted|payment required|failed to fetch|networkerror|fetch failed|supabase error/.test(message);
+}
+
+export function getSupabaseUserMessage(error: unknown, operation: RankingOperation) {
+  const candidate = error as SupabaseRequestError | null;
+  if (candidate?.code === "ONLINE_SERVICE_PAUSED" || SUPABASE_SERVICE_STATUS.enabled || isSupabaseServiceUnavailable(error)) {
+    return getSupabaseServiceNotice(operation);
+  }
+  return operation === "view"
+    ? "成績・ランキングを取得できませんでした。時間をおいてもう一度お試しください。"
+    : "成績を送信できませんでした。時間をおいてもう一度お試しください。";
+}
+
 const SUPABASE_URL = "https://kclkzevcgpfbavegwbnf.supabase.co";
 const SUPABASE_KEY = "sb_publishable__8xy0NDda20OtQPc1zSEng_6440qlY2";
 const RANK_ORDER = ["F", "E", "D", "C", "B", "A", "S", "SS", "神"];
@@ -94,7 +150,15 @@ function getPeriodKey(period: RankingPeriod) {
   return getJstDateKey();
 }
 
-async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<T> {
+async function supabaseRequest<T>(
+  path: string,
+  init?: RequestInit,
+  operation: RankingOperation = "view"
+): Promise<T> {
+  if (SUPABASE_SERVICE_STATUS.enabled) {
+    throw createSupabasePausedError(operation);
+  }
+
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
     headers: {
@@ -106,8 +170,12 @@ async function supabaseRequest<T>(path: string, init?: RequestInit): Promise<T> 
   });
 
   if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || "ランキング通信に失敗しました。");
+    const details = await response.text();
+    const error = new Error("Supabase request failed") as SupabaseRequestError;
+    error.status = response.status;
+    error.details = details;
+    error.operation = operation;
+    throw error;
   }
 
   const responseText = await response.text();
@@ -124,7 +192,7 @@ export async function submitRankingResult(payload: RankingSubmission) {
       Prefer: "return=minimal,resolution=ignore-duplicates"
     },
     body: JSON.stringify(payload)
-  });
+  }, "submit");
 }
 
 export async function submitDailyEffortEvent(
@@ -152,7 +220,7 @@ export async function submitDailyEffortEvent(
       answer_count: pending.answerCount,
       elapsed_seconds: Number((pending.totalMs / 1000).toFixed(2))
     })
-  });
+  }, "submit");
 }
 
 export async function fetchEffortRankings(period: RankingPeriod) {
