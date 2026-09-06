@@ -317,6 +317,10 @@ const MENU_TABS: { id: MenuTab; label: string }[] = [
 const ANNOUNCEMENTS = [
   {
     date: "2026年9月6日",
+    content: "7枚形の解説から個別の形の名称を外し、「7枚形」に表記を統一しました。"
+  },
+  {
+    date: "2026年9月6日",
     content:
       "ヘッドレス1型の8問を7枚形の新問題へ差し替え、今日のおすすめ10問を追加しました。"
   },
