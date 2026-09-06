@@ -386,7 +386,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   ),
   createQuestion(
     "②-4",
-    "678m2223444p67shaku",
+    "678m2223444p67shatsu",
     [
       "1p",
       "2p",
@@ -395,9 +395,9 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       "5p",
       "5s",
       "8s",
-      "haku"
+      "hatsu"
     ],
-    "ヘッドレス1型。□□×（7枚形）2223444ｐの受け入れは12345ｐ。これに67ｓの58ｓと、白の縦受けを加える。",
+    "ヘッドレス1型。□□×（7枚形）2223444ｐの受け入れは12345ｐ。これに67ｓの58ｓと、發の縦受けを加える。",
     ["ヘッドレス1型"],
     "基本"
   ),

@@ -1,5 +1,6 @@
 "use client";
 
+import { APP_VERSION } from "@/lib/appVersion";
 import { TileId, getTileLabel } from "@/lib/quizData";
 
 type TileViewProps = {
@@ -34,7 +35,7 @@ function getTileImagePath(tileId: TileId) {
     return `${TILE_BASE_PATH}/tiles/${SUIT_PREFIX[suit as keyof typeof SUIT_PREFIX]}${number}-66-90-l.png`;
   }
 
-  return `${TILE_BASE_PATH}/tiles/ji${HONOR_FILE_INDEX[tileId as keyof typeof HONOR_FILE_INDEX]}-66-90-l.png`;
+  return `${TILE_BASE_PATH}/tiles/ji${HONOR_FILE_INDEX[tileId as keyof typeof HONOR_FILE_INDEX]}-66-90-l.png?v=${APP_VERSION}`;
 }
 
 export function TileView({ tileId, compact = false, sideways = false }: TileViewProps) {
