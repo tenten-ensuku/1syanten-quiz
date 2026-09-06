@@ -317,6 +317,10 @@ const MENU_TABS: { id: MenuTab; label: string }[] = [
 const ANNOUNCEMENTS = [
   {
     date: "2026年9月6日",
+    content: "7枚形の8問を、亜両面・ノベタン・アンチョビ・スキップ形を組み合わせた問題に更新しました。"
+  },
+  {
+    date: "2026年9月6日",
     content: "白・發の牌画像の取り違えを修正し、②-4の問題・正解・解説を發に統一しました。"
   },
   {
