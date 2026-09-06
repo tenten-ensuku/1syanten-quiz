@@ -112,6 +112,17 @@ const RANK_GENRE_OPTIONS: { id: RankGenre; label: string }[] = [
   { id: "both-all", label: "全問85問" }
 ];
 
+const NEW_QUESTION_IDS = new Set([
+  "②-3",
+  "②-4",
+  "③-3",
+  "④-4",
+  "⑤-1",
+  "⑤-4",
+  "⑥-4",
+  "⑦-3"
+]);
+
 const STATS_STORAGE_KEY = storageKey("stats-v1");
 const FAVORITES_STORAGE_KEY = storageKey("favorites-v1");
 const MISTAKE_CLEAR_MARKERS_STORAGE_KEY = storageKey("mistake-clear-markers-v1");
@@ -201,6 +212,93 @@ function createShuffledIndexes(indexes: number[], limit = indexes.length) {
   return shuffledIndexes.slice(0, limit);
 }
 
+function getDeterministicOrder(value: string) {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+}
+
+function createDailyRecommendationIndexes(
+  indexes: number[],
+  stats: StatsByQuestion,
+  dateKey: string,
+  limit = 10
+) {
+  const candidates = indexes.map((index) => {
+    const baseQuestion = QUIZ_QUESTIONS[index];
+    return {
+      index,
+      baseQuestion,
+      stat: getStats(stats, baseQuestion.id),
+      dailyOrder: getDeterministicOrder(`${dateKey}:${baseQuestion.id}`)
+    };
+  });
+  const selected: typeof candidates = [];
+  const selectedIds = new Set<string>();
+  let selectedNewQuestionCount = 0;
+
+  const appendCandidates = (entries: typeof candidates, maximum = limit) => {
+    let added = 0;
+    for (const entry of entries) {
+      if (selected.length >= limit || added >= maximum) break;
+      if (selectedIds.has(entry.baseQuestion.id)) continue;
+      const isNewQuestion = NEW_QUESTION_IDS.has(entry.baseQuestion.id);
+      if (isNewQuestion && selectedNewQuestionCount >= 2) continue;
+      selected.push(entry);
+      selectedIds.add(entry.baseQuestion.id);
+      if (isNewQuestion) selectedNewQuestionCount += 1;
+      added += 1;
+    }
+  };
+
+  const byDailyOrder = (left: (typeof candidates)[number], right: (typeof candidates)[number]) =>
+    left.dailyOrder - right.dailyOrder;
+  const newQuestions = candidates
+    .filter(({ baseQuestion }) => NEW_QUESTION_IDS.has(baseQuestion.id))
+    .sort(byDailyOrder);
+  const weakQuestions = candidates
+    .filter(({ stat }) => stat.attempts > stat.correct)
+    .sort((left, right) => {
+      const rateDifference = getCorrectRate(left.stat) - getCorrectRate(right.stat);
+      if (rateDifference !== 0) return rateDifference;
+
+      const leftMistakes = left.stat.attempts - left.stat.correct;
+      const rightMistakes = right.stat.attempts - right.stat.correct;
+      if (leftMistakes !== rightMistakes) return rightMistakes - leftMistakes;
+
+      const leftAverage = getAverageCorrectMs(left.stat);
+      const rightAverage = getAverageCorrectMs(right.stat);
+      if (leftAverage !== rightAverage) return rightAverage - leftAverage;
+
+      return byDailyOrder(left, right);
+    });
+  const unattemptedQuestions = candidates
+    .filter(({ stat }) => stat.attempts === 0)
+    .sort(byDailyOrder);
+  const remainingQuestions = [...candidates].sort((left, right) => {
+    const rateDifference = getCorrectRate(left.stat) - getCorrectRate(right.stat);
+    return rateDifference !== 0 ? rateDifference : byDailyOrder(left, right);
+  });
+
+  appendCandidates(newQuestions, 2);
+  appendCandidates(weakQuestions);
+  appendCandidates(unattemptedQuestions);
+  appendCandidates(remainingQuestions);
+
+  return selected
+    .sort(
+      (left, right) =>
+        getDeterministicOrder(`${dateKey}:play:${left.baseQuestion.id}`) -
+        getDeterministicOrder(`${dateKey}:play:${right.baseQuestion.id}`)
+    )
+    .map(({ index }) => index);
+}
+
 const TILE_GROUPS: TileChoiceGroup[] = [
   { label: "萬子", tiles: ["1m", "2m", "3m", "4m", "5m", "6m", "7m", "8m", "9m"] },
   { label: "筒子", tiles: ["1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p"] },
@@ -217,6 +315,11 @@ const MENU_TABS: { id: MenuTab; label: string }[] = [
 ];
 
 const ANNOUNCEMENTS = [
+  {
+    date: "2026年9月6日",
+    content:
+      "ヘッドレス1型の8問を7枚形の新問題へ差し替え、今日のおすすめ10問を追加しました。"
+  },
   {
     date: "2026年7月30日",
     content: "アナウンスボタンを追加し、修正日時と内容を確認できるようにしました。"
@@ -836,6 +939,14 @@ function ChallengeRecordDisplay({ record }: { record?: ChallengeRecord }) {
   );
 }
 
+function NewQuestionBadge({ questionId }: { questionId: string }) {
+  return NEW_QUESTION_IDS.has(questionId) ? (
+    <span className="newQuestionBadge" title="差し替えた新問題">
+      New
+    </span>
+  ) : null;
+}
+
 function ExplanationText({ explanation }: { explanation: string }) {
   return (
     <p className="explanationText">
@@ -1088,6 +1199,11 @@ export default function Home() {
     .filter(([, activity]) => activity.answerCount > 0)
     .sort(([leftDate], [rightDate]) => rightDate.localeCompare(leftDate));
   const todayKey = getJstDateKey();
+  const dailyRecommendationIndexes = createDailyRecommendationIndexes(
+    challengeQuestionIndexes,
+    stats,
+    todayKey
+  );
   const todayActivity = dailyActivity[todayKey] ?? {
     correctCount: 0,
     answerCount: 0,
@@ -1287,6 +1403,19 @@ export default function Home() {
       "全問",
       allRecordKey ?? undefined,
       "all"
+    );
+  };
+
+  const startDailyRecommendation = () => {
+    if (dailyRecommendationIndexes.length === 0) {
+      return;
+    }
+
+    startQuestionSet(
+      dailyRecommendationIndexes,
+      "今日のおすすめ10問",
+      undefined,
+      "type_filtered"
     );
   };
 
@@ -1935,7 +2064,10 @@ export default function Home() {
               onClick={startQuestion}
               onKeyDown={(event) => handleQuestionListKeyDown(event, startQuestion)}
             >
-              <span className="problemId">{baseQuestion.id}</span>
+              <span className="problemIdGroup">
+                <span className="problemId">{baseQuestion.id}</span>
+                <NewQuestionBadge questionId={baseQuestion.id} />
+              </span>
               <span
                 className="problemTiles"
                 aria-label={baseQuestion.source}
@@ -2037,7 +2169,10 @@ export default function Home() {
                 onClick={startQuestion}
                 onKeyDown={(event) => handleQuestionListKeyDown(event, startQuestion)}
               >
-                <span className="problemId">{baseQuestion.id}</span>
+                <span className="problemIdGroup">
+                  <span className="problemId">{baseQuestion.id}</span>
+                  <NewQuestionBadge questionId={baseQuestion.id} />
+                </span>
                 <span
                   className="problemTiles"
                   aria-label={baseQuestion.source}
@@ -2483,6 +2618,15 @@ export default function Home() {
             <span className="challengeMeta">{challengeQuestionIndexes.length}種を通しで挑戦</span>
             <ChallengeRecordDisplay record={allRecord} />
           </button>
+          <button
+            className="challengeCard recommended"
+            type="button"
+            onClick={startDailyRecommendation}
+            disabled={dailyRecommendationIndexes.length === 0}
+          >
+            <span className="challengeLabel">今日のおすすめ10問</span>
+            <span className="challengeMeta">未挑戦・苦手を優先して選出</span>
+          </button>
         </div>
         <div className="typeChallengePanel">
           <div className="sectionTitleRow">
@@ -2742,7 +2886,10 @@ export default function Home() {
                 return (
                   <div className="wrongQuestionItem" key={`${item.questionId}-${index}`}>
                     <div className="wrongQuestionTitle">
-                      <strong>問題 {item.questionId}</strong>
+                      <span className="questionTitleWithBadge">
+                        <strong>問題 {item.questionId}</strong>
+                        <NewQuestionBadge questionId={item.questionId} />
+                      </span>
                       {renderFavoriteButton(item.questionId)}
                     </div>
                     <div
@@ -2809,7 +2956,10 @@ export default function Home() {
     <>
       <section className="panel questionPanel" aria-labelledby="question-title">
         <div className="sectionTitleRow">
-          <h2 id="question-title">問題 {question.id}</h2>
+          <h2 className="questionTitleWithBadge" id="question-title">
+            <span>問題 {question.id}</span>
+            <NewQuestionBadge questionId={question.id} />
+          </h2>
           <div className="sectionTitleActions">
             <span className="questionCount">{currentProgress}</span>
             {renderFavoriteButton(question.id)}

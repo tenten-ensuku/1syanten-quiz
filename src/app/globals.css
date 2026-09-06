@@ -298,18 +298,18 @@ h2 {
 
 .challengeGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .challengeCard {
   display: grid;
-  min-height: 176px;
-  align-content: center;
-  gap: 10px;
-  padding: 18px;
+  min-height: 132px;
+  align-content: start;
+  gap: 7px;
+  padding: 14px;
   border: 1px solid rgba(17, 24, 39, 0.14);
-  border-radius: 20px;
+  border-radius: 8px;
   color: #eef2f7;
   background:
     radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.16), transparent 68%),
@@ -328,14 +328,20 @@ h2 {
     linear-gradient(180deg, #ffd56e, #e58b26 48%, #7a330b);
 }
 
+.challengeCard.recommended {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.18), transparent 66%),
+    linear-gradient(180deg, #166f65, #0d4741);
+}
+
 .challengeCard:hover {
   transform: translateY(-1px);
 }
 
 .challengeLabel {
-  font-size: clamp(1.45rem, 5vw, 2.25rem);
+  font-size: 1.35rem;
   font-weight: 900;
-  line-height: 1;
+  line-height: 1.14;
 }
 
 .challengeMeta {
@@ -348,8 +354,9 @@ h2 {
 .challengeRecord {
   display: grid;
   align-self: end;
-  gap: 5px;
-  padding-top: 10px;
+  gap: 3px;
+  margin-top: auto;
+  padding-top: 7px;
   border-top: 1px solid currentColor;
   font-size: 0.78rem;
   line-height: 1.25;
@@ -1139,6 +1146,32 @@ h2 {
 .problemId {
   color: var(--accent-strong);
   font-weight: 900;
+}
+
+.problemIdGroup {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.newQuestionBadge {
+  display: inline-flex;
+  min-height: 16px;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #ffffff;
+  background: #d3462f;
+  font-size: 0.65rem;
+  font-weight: 1000;
+  line-height: 1.2;
+}
+
+.questionTitleWithBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .problemTiles {
@@ -2289,14 +2322,45 @@ h2 {
     padding: 14px;
   }
 
-  .challengeGrid,
+  .challengeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
   .typeFilterGrid,
   .analysisGrid {
     grid-template-columns: 1fr;
   }
 
   .challengeCard {
-    min-height: 160px;
+    min-height: 124px;
+    padding: 11px;
+  }
+
+  .challengeCard.recommended {
+    grid-column: 1 / -1;
+    min-height: 88px;
+  }
+
+  .challengeLabel {
+    font-size: 1.05rem;
+  }
+
+  .challengeMeta {
+    font-size: 0.7rem;
+  }
+
+  .challengeRecordLine {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 5px;
+    white-space: normal;
+  }
+
+  .challengeRecordTime {
+    grid-column: 2;
+    margin-left: 0;
+    font-size: 0.72rem;
   }
 
   .rankingSubmitCard {
